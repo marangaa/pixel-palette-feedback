@@ -8,32 +8,13 @@ datasource db {
 }
 
 model Conversation {
-  id        String   @id @default(cuid())
-  userId    String
-  message   String   @db.Text
-  response  String   @db.Text
-  timestamp DateTime
-  isAnalyzed Boolean @default(false)
+  id            String   @id @default(cuid())
+  userId        String
+  sessionId     String
+  messages      Json // Stores the array of message objects
+  extractedData Json // Stores the extracted data object
+  timestamp     DateTime @default(now())
 
   @@index([userId])
-  @@index([timestamp])
-}
-
-model Feedback {
-  id           String   @id @default(cuid())
-  userId       String
-  conversationId String // Reference to the original conversation
-  satisfaction Int      @db.SmallInt
-  feedback     String   @db.Text
-  category     String
-  sentiment    String
-  contactType  String?  // 'email' or 'phone'
-  contactValue String?  // The actual email or phone number
-  rawFeedback  String   @db.Text
-  timestamp    DateTime
-
-  @@index([userId])
-  @@index([category])
-  @@index([timestamp])
-  @@index([conversationId])
+  @@index([sessionId])
 }

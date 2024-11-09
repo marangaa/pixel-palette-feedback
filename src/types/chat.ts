@@ -1,11 +1,41 @@
-export interface ChatMessage {
-    role: 'user' | 'assistant';
+export interface Message {
+    role: 'assistant' | 'user';
     content: string;
-  }
-  
-  export interface FeedbackAnalysis {
+}
+
+export interface ProcessingMessage {
+    type: 'loading' | 'processing';
+    content: string;
+}
+
+export interface ExtractedData {
     satisfaction: number;
-    feedback: string;
-    category: 'bug' | 'feature' | 'experience' | 'other';
-    sentiment: 'positive' | 'negative' | 'neutral';
-  }
+    pain_points: string[];
+    feature_requests: string[];
+    contact: {
+        method: string | null;
+        value: string | null;
+    };
+    sentiment: string;
+    key_themes: string[];
+}
+
+export interface Analysis {
+    shouldEnd: boolean;
+    reason: 'user_request' | 'complete_information' | 'continue';
+    missingElements: string[];
+    nextQuestion: string | null;
+    collectedInfo: {
+        hasRating: boolean;
+        hasContactPreference: boolean;
+        hasFeedback: boolean;
+        hasFeatureRequests: boolean;
+        userWantsToEnd: boolean;
+    };
+}
+
+export interface ChatResponse {
+    response: string;
+    isComplete: boolean;
+    analysis: Analysis;
+}
