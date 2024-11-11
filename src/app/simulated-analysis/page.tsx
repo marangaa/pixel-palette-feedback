@@ -182,53 +182,24 @@ const simulatedAnalysis = {
 };
 
 export default function AnalysisPage() {
-    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [analysisData, setAnalysisData] = useState<any>(null);
 
     useEffect(() => {
-        const itemId = searchParams.get('itemId');
-
-        // Simulate API call with setTimeout
-        const fetchAnalysis = async () => {
+        // Simulate loading delay for a more realistic feel
+        const loadData = async () => {
             try {
                 setIsLoading(true);
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // In production, you would fetch from your API
-                // const response = await fetch(`/api/analysis?itemId=${itemId}`);
-                // const data = await response.json();
-
-                // For now, use simulated data
+                // Add a small delay to simulate data loading
+                await new Promise(resolve => setTimeout(resolve, 800));
                 setAnalysisData(simulatedAnalysis);
-                setError(null);
-            } catch (err) {
-                setError('Failed to load analysis data');
-                console.error('Error loading analysis:', err);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (itemId) {
-            fetchAnalysis();
-        } else {
-            setError('No item ID provided');
-        }
-    }, [searchParams]);
-
-    if (error) {
-        return (
-            <div className="p-4">
-                <Card className="p-6 bg-red-50">
-                    <h2 className="text-lg font-semibold text-red-700">Error</h2>
-                    <p className="text-red-600">{error}</p>
-                </Card>
-            </div>
-        );
-    }
+        loadData();
+    }, []);
 
     if (isLoading) {
         return (
