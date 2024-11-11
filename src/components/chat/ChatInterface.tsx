@@ -96,7 +96,7 @@ const ChatInterface = () => {
       }));
 
       // Save conversation
-      const saveResponse = await fetch('/api/save-conversation', {
+      const saveResponse = await fetch('/api/save-extracted-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

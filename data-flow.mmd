@@ -1,0 +1,34 @@
+flowchart TD
+subgraph Input
+CF[Customer Feedback]
+CD[Company Data]
+MK[Market Context]
+end
+
+    subgraph Processing
+        FA[Feedback Analysis]
+        RG[Roadmap Generation]
+        DA[Detailed Analysis]
+    end
+
+    subgraph Output
+        RP[Product Roadmap]
+        KP[KPIs & Metrics]
+        RT[Risk Tracking]
+    end
+
+    CF --> FA
+    CD --> RG
+    MK --> DA
+
+    FA --> |Features & Bugs| RG
+    FA --> |User Sentiment| DA
+    RG --> |Strategic Items| DA
+    
+    DA --> RP
+    DA --> KP
+    DA --> RT
+
+    style Input fill:#f9f9ff,stroke:#333,stroke-width:2px
+    style Processing fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style Output fill:#f9fff9,stroke:#333,stroke-width:2px

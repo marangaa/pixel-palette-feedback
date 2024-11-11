@@ -1,0 +1,70 @@
+graph TB
+subgraph Frontend
+UI[UI Components]
+RV[Roadmap Views]
+AV[Analysis Views]
+KV[Kanban Views]
+end
+
+    subgraph Backend
+        API[API Routes]
+        FA[Feedback Analysis]
+        RG[Roadmap Generation]
+        DA[Detailed Analysis]
+    end
+
+    subgraph AI
+        GA[Gemini AI]
+        subgraph Models
+            FM[Feedback Model]
+            RM[Roadmap Model]
+            AM[Analysis Model]
+        end
+    end
+
+    subgraph Database
+        PG[(PostgreSQL)]
+        subgraph Tables
+            FB[Feedback]
+            RD[Roadmap]
+            AN[Analysis]
+        end
+    end
+
+    UI --> RV
+    UI --> AV
+    UI --> KV
+    
+    RV --> API
+    AV --> API
+    KV --> API
+    
+    API --> FA
+    API --> RG
+    API --> DA
+    
+    FA --> GA
+    RG --> GA
+    DA --> GA
+    
+    GA --> FM
+    GA --> RM
+    GA --> AM
+    
+    FA --> PG
+    RG --> PG
+    DA --> PG
+    
+    PG --> FB
+    PG --> RD
+    PG --> AN
+
+    classDef primary fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef secondary fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef ai fill:#bfb,stroke:#333,stroke-width:2px;
+    classDef db fill:#fbb,stroke:#333,stroke-width:2px;
+    
+    class UI,RV,AV,KV primary;
+    class API,FA,RG,DA secondary;
+    class GA,FM,RM,AM ai;
+    class PG,FB,RD,AN db;
