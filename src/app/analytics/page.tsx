@@ -1,10 +1,6 @@
+'use client'
 import React from 'react';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
-
-export const metadata = {
-    title: 'Feedback Analytics Dashboard',
-    description: 'Analyze user feedback and feature requests',
-};
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 
 export default function AnalyticsPage() {
     return (

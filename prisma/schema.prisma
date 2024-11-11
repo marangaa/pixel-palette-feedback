@@ -7,14 +7,269 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Existing models
 model Conversation {
   id            String   @id @default(cuid())
   userId        String
   sessionId     String
-  messages      Json // Stores the array of message objects
-  extractedData Json // Stores the extracted data object
+  messages      Json
+  extractedData Json
   timestamp     DateTime @default(now())
 
   @@index([userId])
   @@index([sessionId])
+}
+
+model FeedbackAnalysis {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  timeRange  Int
+  categories Json
+  insights   Json
+  stats      Json
+  isLatest   Boolean  @default(true)
+
+  @@index([timestamp])
+  @@index([isLatest])
+}
+
+// New Roadmap Models
+model RoadmapItem {
+  id           String   @id @default(cuid())
+  type         String // 'feature' | 'bug' | 'improvement' | 'infrastructure'
+  title        String
+  description  String
+  timeframe    String // 'current' | 'next' | 'future' | 'completed'
+  priority     String // 'critical' | 'high' | 'medium' | 'low'
+  status       String // 'planned' | 'in-progress' | 'blocked' | 'completed' | 'cancelled'
+  effort       Float
+  assignedTeam String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  roadmapId        String
+  roadmap          Roadmap              @relation(fields: [roadmapId], references: [id])
+  branchId         String?
+  branch           RoadmapBranch?       @relation(fields: [branchId], references: [id])
+  milestones       Milestone[]
+  dependencies     ItemDependency[]     @relation("DependencySource")
+  dependents       ItemDependency[]     @relation("DependencyTarget")
+  analysis         ItemAnalysis?
+  feedback         ItemFeedback?
+  resources        ResourceAllocation[]
+  DetailedAnalysis DetailedAnalysis[]
+
+  @@index([roadmapId])
+  @@index([status])
+  @@index([timeframe])
+}
+
+model RoadmapBranch {
+  id             String          @id @default(cuid())
+  type           String // 'main' | 'alternative' | 'dependent'
+  title          String
+  description    String
+  probability    Float // 0-100
+  parentBranchId String?
+  parentBranch   RoadmapBranch?  @relation("BranchHierarchy", fields: [parentBranchId], references: [id])
+  childBranches  RoadmapBranch[] @relation("BranchHierarchy")
+  roadmapId      String
+  roadmap        Roadmap         @relation(fields: [roadmapId], references: [id])
+  items          RoadmapItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Conditional branching
+  conditionType  String? // 'milestone' | 'metric' | 'date'
+  conditionValue String?
+
+  @@index([roadmapId])
+}
+
+model Milestone {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  progress    Float // 0-100
+  status      String // Same as RoadmapItem status
+  itemId      String
+  item        RoadmapItem @relation(fields: [itemId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([itemId])
+  @@index([startDate, endDate])
+}
+
+model ItemDependency {
+  id       String      @id @default(cuid())
+  sourceId String
+  targetId String
+  type     String // 'blocks' | 'requires' | 'related'
+  source   RoadmapItem @relation("DependencySource", fields: [sourceId], references: [id])
+  target   RoadmapItem @relation("DependencyTarget", fields: [targetId], references: [id])
+
+  @@unique([sourceId, targetId])
+}
+
+model ItemAnalysis {
+  id          String      @id @default(cuid())
+  itemId      String      @unique
+  item        RoadmapItem @relation(fields: [itemId], references: [id])
+  feasibility Float // 0-100
+  impact      Float // 0-100
+  risk        Float // 0-100
+  resources   Json // { required: number, available: number }
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([itemId])
+}
+
+model ItemFeedback {
+  id           String      @id @default(cuid())
+  itemId       String      @unique
+  item         RoadmapItem @relation(fields: [itemId], references: [id])
+  requestCount Int
+  avgSentiment Float
+  userSegments String[]
+  keyThemes    String[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([itemId])
+}
+
+model ResourceAllocation {
+  id         String      @id @default(cuid())
+  itemId     String
+  item       RoadmapItem @relation(fields: [itemId], references: [id])
+  teamId     String
+  allocation Float // Percentage
+  capacity   Float
+  startDate  DateTime
+  endDate    DateTime
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([itemId])
+  @@index([teamId])
+  @@index([startDate, endDate])
+}
+
+model Roadmap {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  version     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branches    RoadmapBranch[]
+  items       RoadmapItem[]
+  constraints Json
+
+  @@index([isActive])
+}
+
+model DetailedAnalysis {
+  id        String      @id @default(cuid())
+  itemId    String      @unique
+  item      RoadmapItem @relation(fields: [itemId], references: [id])
+  timestamp DateTime    @default(now())
+
+  // Market Analysis
+  marketAnalysis MarketAnalysis?
+
+  // Team Perspectives
+  teamPerspectives TeamPerspective[]
+
+  // Implementation Details
+  implementation ImplementationDetails?
+
+  // User Impact
+  userImpact UserImpactAnalysis?
+
+  // Resource Analysis
+  resourceAnalysis ResourceAnalysis?
+
+  // Final Recommendation
+  recommendation Recommendation?
+
+  @@index([itemId])
+  @@index([timestamp])
+}
+
+model MarketAnalysis {
+  id         String           @id @default(cuid())
+  analysisId String           @unique
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  marketSize    Json // { total_addressable, serviceable, current_reach }
+  competition   Json // { direct_competitors, indirect_competitors }
+  trends        Json // { growing, declining, emerging }
+  opportunities String[]
+  risks         String[]
+}
+
+model TeamPerspective {
+  id         String           @id @default(cuid())
+  analysisId String
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  role            String
+  concerns        String[]
+  priorities      String[]
+  constraints     String[]
+  expertiseAreas  String[]
+  confidenceLevel Float // 0-1
+  estimatedEffort Json // { time, resources, dependencies }
+}
+
+model ImplementationDetails {
+  id         String           @id @default(cuid())
+  analysisId String           @unique
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  technical    Json // { complexity, uncertain_areas, required_expertise, roadblocks }
+  business     Json // { cost_estimate, revenue_impact, opportunity_cost }
+  timeline     Json // { estimated_duration, milestones, risks }
+  dependencies Json // { technical, business, external }
+}
+
+model UserImpactAnalysis {
+  id         String           @id @default(cuid())
+  analysisId String           @unique
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  segmentsAffected   Json // [{ segment, impact_level, benefits, drawbacks }]
+  adoptionPrediction Json // { rate, factors: { driving, hindering } }
+  feedbackAnalysis   Json // { positive_indicators, concerns, requested_modifications }
+}
+
+model ResourceAnalysis {
+  id         String           @id @default(cuid())
+  analysisId String           @unique
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  teamsInvolved  Json // [{ team, required_time, key_skills }]
+  infrastructure Json // { new_requirements, upgrades_needed, estimated_costs }
+  training       Json // { required_skills, training_time, materials_needed }
+}
+
+model Recommendation {
+  id         String           @id @default(cuid())
+  analysisId String           @unique
+  analysis   DetailedAnalysis @relation(fields: [analysisId], references: [id])
+
+  decision        String // 'proceed' | 'hold' | 'modify' | 'reject'
+  confidenceLevel Float // 0-1
+  keyFactors      String[]
+  nextSteps       String[]
+  alternatives    String[]
+  risks           String[]
 }

@@ -7,10 +7,10 @@ interface TimeRangeSelectorProps {
 }
 
 const timeRanges = [
-    { label: '7 Days', value: 7 },
-    { label: '30 Days', value: 30 },
-    { label: '90 Days', value: 90 },
-];
+    { label: '7 days', value: 7 },
+    { label: '30 days', value: 30 },
+    { label: '90 days', value: 90 }
+] as const;
 
 export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onChange }) => {
     return (
@@ -19,14 +19,16 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onC
             <select
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
-                className="bg-white border border-gray-200 text-gray-700 py-2 px-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 px-3 py-2 appearance-none cursor-pointer"
             >
                 {timeRanges.map((range) => (
                     <option key={range.value} value={range.value}>
-                        {range.label}
+                        Last {range.label}
                     </option>
                 ))}
             </select>
         </div>
     );
 };
+
+export default TimeRangeSelector;
