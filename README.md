@@ -160,8 +160,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📧 Contact
 
 For questions or feedback, please contact:
-- Email: your.email@example.com
-- Twitter: [@yourhandle](https://twitter.com/yourhandle)
+- Email: rchdmaranga@gmail.com
+- Twitter: [@_marangaa](https://twitter.com/_marangaa)
 
 ---
 
