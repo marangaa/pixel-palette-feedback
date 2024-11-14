@@ -20,18 +20,25 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { MarketAnalysis } from '@/types/detailed-analysis';
 
+interface MarketAnalysisViewProps {
+    analysis: MarketAnalysis;
+    onUpdate?: (updates: Partial<MarketAnalysis>) => void;
+}
+
 interface MarketStatCardProps {
     title: string;
     value: number;
     total: number;
     description: string;
+    onUpdate?: (value: number) => void;
 }
 
 const MarketStatCard: React.FC<MarketStatCardProps> = ({
                                                            title,
                                                            value,
                                                            total,
-                                                           description
+                                                           description,
+                                                           onUpdate
                                                        }) => {
     const percentage = ((value / total) * 100).toFixed(1);
 
@@ -64,9 +71,10 @@ const MarketStatCard: React.FC<MarketStatCardProps> = ({
 
 interface CompetitorTableProps {
     competitors: MarketAnalysis['competition']['direct_competitors'];
+    onUpdate?: (updates: typeof competitors) => void;
 }
 
-const CompetitorTable: React.FC<CompetitorTableProps> = ({ competitors }) => (
+const CompetitorTable: React.FC<CompetitorTableProps> = ({ competitors, onUpdate }) => (
     <Table>
         <TableCaption>Direct Competitors Analysis</TableCaption>
         <TableHeader>
@@ -112,9 +120,10 @@ const CompetitorTable: React.FC<CompetitorTableProps> = ({ competitors }) => (
 
 interface TrendSectionProps {
     trends: MarketAnalysis['trends'];
+    onUpdate?: (updates: Partial<MarketAnalysis['trends']>) => void;
 }
 
-const TrendSection: React.FC<TrendSectionProps> = ({ trends }) => (
+const TrendSection: React.FC<TrendSectionProps> = ({ trends, onUpdate }) => (
     <div className="grid grid-cols-3 gap-4">
         <Card>
             <CardHeader>
@@ -155,10 +164,10 @@ const TrendSection: React.FC<TrendSectionProps> = ({ trends }) => (
     </div>
 );
 
-export const MarketAnalysisView: React.FC<{ analysis: MarketAnalysis | undefined | null }> = ({
-                                                                                                  analysis
-                                                                                              }) => {
-    // Return early if analysis is not available
+export const MarketAnalysisView: React.FC<MarketAnalysisViewProps> = ({
+                                                                          analysis,
+                                                                          onUpdate
+                                                                      }) => {
     if (!analysis) {
         return (
             <div className="p-4 text-center">
@@ -167,26 +176,8 @@ export const MarketAnalysisView: React.FC<{ analysis: MarketAnalysis | undefined
         );
     }
 
-    // Ensure market_size exists and has required properties
-    const marketSize = analysis.market_size || {
-        total_addressable: 0,
-        serviceable: 0,
-        current_reach: 0
-    };
-
-    const totalMarket = marketSize.total_addressable || 0;
-
-    // Ensure competition exists and has required properties
-    const competition = analysis.competition || {
-        direct_competitors: []
-    };
-
-    // Ensure trends exist and have required properties
-    const trends = analysis.trends || {
-        growing: [],
-        emerging: [],
-        declining: []
-    };
+    const marketSize = analysis.market_size;
+    const totalMarket = marketSize.total_addressable;
 
     return (
         <div className="space-y-8">
@@ -196,28 +187,37 @@ export const MarketAnalysisView: React.FC<{ analysis: MarketAnalysis | undefined
                     value={marketSize.total_addressable}
                     total={totalMarket}
                     description="Total potential market size"
+                    onUpdate={value => onUpdate?.({
+                        market_size: { ...marketSize, total_addressable: value }
+                    })}
                 />
                 <MarketStatCard
                     title="Serviceable Market"
                     value={marketSize.serviceable}
                     total={totalMarket}
                     description="Market we can serve"
+                    onUpdate={value => onUpdate?.({
+                        market_size: { ...marketSize, serviceable: value }
+                    })}
                 />
                 <MarketStatCard
                     title="Current Reach"
                     value={marketSize.current_reach}
                     total={totalMarket}
                     description="Our current market share"
+                    onUpdate={value => onUpdate?.({
+                        market_size: { ...marketSize, current_reach: value }
+                    })}
                 />
             </div>
 
-            {competition.direct_competitors.length > 0 && (
+            {analysis.competition.direct_competitors.length > 0 && (
                 <div className="bg-white p-6 rounded-lg shadow">
                     <h3 className="text-lg font-semibold mb-4">Market Share Distribution</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                                data={competition.direct_competitors}
+                                data={analysis.competition.direct_competitors}
                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" />
@@ -231,19 +231,28 @@ export const MarketAnalysisView: React.FC<{ analysis: MarketAnalysis | undefined
                 </div>
             )}
 
-            {competition.direct_competitors.length > 0 && (
+            {analysis.competition.direct_competitors.length > 0 && (
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold">Competitive Analysis</h3>
-                    <CompetitorTable competitors={competition.direct_competitors} />
+                    <CompetitorTable
+                        competitors={analysis.competition.direct_competitors}
+                        onUpdate={competitors => onUpdate?.({
+                            competition: {
+                                ...analysis.competition,
+                                direct_competitors: competitors
+                            }
+                        })}
+                    />
                 </div>
             )}
 
-            {(trends.growing.length > 0 || trends.emerging.length > 0 || trends.declining.length > 0) && (
-                <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">Market Trends</h3>
-                    <TrendSection trends={trends} />
-                </div>
-            )}
+            <div className="space-y-6">
+                <h3 className="text-lg font-semibold">Market Trends</h3>
+                <TrendSection
+                    trends={analysis.trends}
+                    onUpdate={trends => onUpdate?.({ trends })}
+                />
+            </div>
         </div>
     );
 };

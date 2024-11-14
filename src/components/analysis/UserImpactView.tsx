@@ -18,7 +18,12 @@ import {
 } from 'recharts';
 import type { UserImpact } from '@/types/detailed-analysis';
 
-const ImpactLevelBadge: React.FC<{ level: string }> = ({ level }) => {
+interface UserImpactViewProps {
+    impact: UserImpact;
+    onUpdate?: (updates: Partial<UserImpact>) => void;
+}
+
+const ImpactLevelBadge: React.FC<{ level: 'high' | 'medium' | 'low' }> = ({ level }) => {
     const colors = {
         high: 'bg-red-100 text-red-800 border-red-200',
         medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -26,7 +31,7 @@ const ImpactLevelBadge: React.FC<{ level: string }> = ({ level }) => {
     };
 
     return (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${colors[level as keyof typeof colors]}`}>
+        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${colors[level]}`}>
             {level.toUpperCase()}
         </span>
     );
@@ -34,9 +39,10 @@ const ImpactLevelBadge: React.FC<{ level: string }> = ({ level }) => {
 
 interface SegmentCardProps {
     segment: UserImpact['segments_affected'][0];
+    onUpdate?: (updates: Partial<UserImpact['segments_affected'][0]>) => void;
 }
 
-const SegmentCard: React.FC<SegmentCardProps> = ({ segment }) => (
+const SegmentCard: React.FC<SegmentCardProps> = ({ segment, onUpdate }) => (
     <Card>
         <CardHeader>
             <div className="flex items-center justify-between">
@@ -73,13 +79,16 @@ const SegmentCard: React.FC<SegmentCardProps> = ({ segment }) => (
     </Card>
 );
 
-const AdoptionInsights: React.FC<{
-    adoption: UserImpact['adoption_prediction']
-}> = ({ adoption }) => {
+interface AdoptionInsightsProps {
+    adoption: UserImpact['adoption_prediction'];
+    onUpdate?: (updates: Partial<UserImpact['adoption_prediction']>) => void;
+}
+
+const AdoptionInsights: React.FC<AdoptionInsightsProps> = ({ adoption, onUpdate }) => {
     const radarData = [
         { subject: 'Adoption Rate', A: adoption.rate * 100 },
         ...adoption.factors.driving.map((factor) => ({
-            subject: factor.slice(0, 15) + '...',
+            subject: factor.length > 15 ? factor.slice(0, 15) + '...' : factor,
             A: Math.random() * 100
         })),
     ];
@@ -142,9 +151,12 @@ const AdoptionInsights: React.FC<{
     );
 };
 
-const FeedbackAnalysis: React.FC<{
-    feedback: UserImpact['feedback_analysis']
-}> = ({ feedback }) => (
+interface FeedbackAnalysisProps {
+    feedback: UserImpact['feedback_analysis'];
+    onUpdate?: (updates: Partial<UserImpact['feedback_analysis']>) => void;
+}
+
+const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ feedback, onUpdate }) => (
     <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -195,7 +207,7 @@ const FeedbackAnalysis: React.FC<{
     </Card>
 );
 
-export const UserImpactView: React.FC<{ impact: UserImpact }> = ({ impact }) => {
+export const UserImpactView: React.FC<UserImpactViewProps> = ({ impact, onUpdate }) => {
     return (
         <div className="space-y-8">
             <div>
@@ -205,13 +217,33 @@ export const UserImpactView: React.FC<{ impact: UserImpact }> = ({ impact }) => 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {impact.segments_affected.map((segment, index) => (
-                    <SegmentCard key={index} segment={segment} />
+                    <SegmentCard
+                        key={index}
+                        segment={segment}
+                        onUpdate={updates => {
+                            if (onUpdate) {
+                                const newSegments = [...impact.segments_affected];
+                                newSegments[index] = { ...segment, ...updates };
+                                onUpdate({ segments_affected: newSegments });
+                            }
+                        }}
+                    />
                 ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AdoptionInsights adoption={impact.adoption_prediction} />
-                <FeedbackAnalysis feedback={impact.feedback_analysis} />
+                <AdoptionInsights
+                    adoption={impact.adoption_prediction}
+                    onUpdate={updates => onUpdate?.({
+                        adoption_prediction: { ...impact.adoption_prediction, ...updates }
+                    })}
+                />
+                <FeedbackAnalysis
+                    feedback={impact.feedback_analysis}
+                    onUpdate={updates => onUpdate?.({
+                        feedback_analysis: { ...impact.feedback_analysis, ...updates }
+                    })}
+                />
             </div>
         </div>
     );

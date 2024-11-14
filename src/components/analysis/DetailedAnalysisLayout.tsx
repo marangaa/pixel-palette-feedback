@@ -6,18 +6,12 @@ import { ImplementationRisksView } from './ImplementationRisksView';
 import { UserImpactView } from './UserImpactView';
 import { ResourceRequirementsView } from './ResourceRequirementsView';
 import { RecommendationView } from './RecommendationView';
-import type { DetailedAnalysis } from '@/types/detailed-analysis';
-
-interface DetailedAnalysisLayoutProps {
-    analysis: DetailedAnalysis;
-    isLoading?: boolean;
-    onUpdateFeedback?: (feedback: any) => void;
-}
+import { DetailedAnalysisLayoutProps } from '@/types/detailed-analysis';
 
 const DetailedAnalysisLayout: React.FC<DetailedAnalysisLayoutProps> = ({
                                                                            analysis,
                                                                            isLoading,
-                                                                           onUpdateFeedback
+                                                                           onUpdateAnalysis
                                                                        }) => {
     if (isLoading) {
         return (
@@ -41,7 +35,7 @@ const DetailedAnalysisLayout: React.FC<DetailedAnalysisLayoutProps> = ({
                     <TabsList className="grid grid-cols-6 gap-4 bg-white p-1 rounded-lg">
                         <TabsTrigger value="market">Market</TabsTrigger>
                         <TabsTrigger value="team">Team</TabsTrigger>
-                        <TabsTrigger value="risks">Risks</TabsTrigger>
+                        <TabsTrigger value="risks">Implementation</TabsTrigger>
                         <TabsTrigger value="impact">Impact</TabsTrigger>
                         <TabsTrigger value="resources">Resources</TabsTrigger>
                         <TabsTrigger value="recommendation">Recommendation</TabsTrigger>
@@ -49,34 +43,44 @@ const DetailedAnalysisLayout: React.FC<DetailedAnalysisLayoutProps> = ({
 
                     <div className="bg-white rounded-lg p-6 shadow-sm">
                         <TabsContent value="market">
-                            <MarketAnalysisView analysis={analysis.market_analysis} />
+                            <MarketAnalysisView
+                                analysis={analysis.market_analysis}
+                                onUpdate={updates => onUpdateAnalysis?.('market_analysis', updates)}
+                            />
                         </TabsContent>
 
                         <TabsContent value="team">
                             <TeamPerspectivesView
                                 perspectives={analysis.team_perspectives}
-                                onUpdateFeedback={onUpdateFeedback}
+                                onUpdate={updates => onUpdateAnalysis?.('team_perspectives', updates)}
                             />
                         </TabsContent>
 
                         <TabsContent value="risks">
-                            <ImplementationRisksView risks={analysis.implementation_risks} />
+                            <ImplementationRisksView
+                                risks={analysis.implementation_risks}
+                                onUpdate={updates => onUpdateAnalysis?.('implementation_risks', updates)}
+                            />
                         </TabsContent>
 
                         <TabsContent value="impact">
-                            <UserImpactView impact={analysis.user_impact} />
+                            <UserImpactView
+                                impact={analysis.user_impact}
+                                onUpdate={updates => onUpdateAnalysis?.('user_impact', updates)}
+                            />
                         </TabsContent>
 
                         <TabsContent value="resources">
                             <ResourceRequirementsView
                                 requirements={analysis.resource_requirements}
+                                onUpdate={updates => onUpdateAnalysis?.('resource_requirements', updates)}
                             />
                         </TabsContent>
 
                         <TabsContent value="recommendation">
                             <RecommendationView
                                 recommendation={analysis.recommendation}
-                                onUpdateFeedback={onUpdateFeedback}
+                                onUpdate={updates => onUpdateAnalysis?.('recommendation', updates)}
                             />
                         </TabsContent>
                     </div>

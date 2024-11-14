@@ -5,11 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import type { TeamPerspective } from '@/types/detailed-analysis';
 
-interface TeamMemberCardProps {
-    perspective: TeamPerspective;
+interface TeamPerspectivesViewProps {
+    perspectives: TeamPerspective[];
+    onUpdate?: (updates: Partial<{ team_perspectives: TeamPerspective[] }>) => void;
 }
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ perspective }) => {
+interface TeamMemberCardProps {
+    perspective: TeamPerspective;
+    onUpdate?: (updates: Partial<TeamPerspective>) => void;
+}
+
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ perspective, onUpdate }) => {
     return (
         <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center gap-4">
@@ -100,14 +106,9 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ perspective }) => {
     );
 };
 
-interface TeamPerspectivesViewProps {
-    perspectives: TeamPerspective[];
-    onUpdateFeedback?: (feedback: any) => void;
-}
-
 export const TeamPerspectivesView: React.FC<TeamPerspectivesViewProps> = ({
                                                                               perspectives,
-                                                                              onUpdateFeedback
+                                                                              onUpdate
                                                                           }) => {
     return (
         <div className="space-y-8">
@@ -118,7 +119,17 @@ export const TeamPerspectivesView: React.FC<TeamPerspectivesViewProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {perspectives.map((perspective, index) => (
-                    <TeamMemberCard key={index} perspective={perspective} />
+                    <TeamMemberCard
+                        key={index}
+                        perspective={perspective}
+                        onUpdate={updates => {
+                            if (onUpdate) {
+                                const newPerspectives = [...perspectives];
+                                newPerspectives[index] = { ...perspective, ...updates };
+                                onUpdate({ team_perspectives: newPerspectives });
+                            }
+                        }}
+                    />
                 ))}
             </div>
         </div>

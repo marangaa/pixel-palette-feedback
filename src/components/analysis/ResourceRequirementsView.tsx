@@ -12,11 +12,17 @@ import {
 } from 'lucide-react';
 import type { ResourceRequirements } from '@/types/detailed-analysis';
 
-interface TeamAllocationCardProps {
-    team: ResourceRequirements['teams_involved'][0];
+interface ResourceRequirementsViewProps {
+    requirements: ResourceRequirements;
+    onUpdate?: (updates: Partial<ResourceRequirements>) => void;
 }
 
-const TeamAllocationCard: React.FC<TeamAllocationCardProps> = ({ team }) => {
+interface TeamAllocationCardProps {
+    team: ResourceRequirements['teams_involved'][0];
+    onUpdate?: (updates: Partial<typeof team>) => void;
+}
+
+const TeamAllocationCard: React.FC<TeamAllocationCardProps> = ({ team, onUpdate }) => {
     // Convert time string to approximate hours for progress bar
     const getTimeProgress = (timeStr: string) => {
         const hours = timeStr.toLowerCase().includes('week')
@@ -55,9 +61,13 @@ const TeamAllocationCard: React.FC<TeamAllocationCardProps> = ({ team }) => {
 
 interface InfrastructureRequirementsProps {
     infrastructure: ResourceRequirements['infrastructure'];
+    onUpdate?: (updates: Partial<typeof infrastructure>) => void;
 }
 
-const InfrastructureRequirements: React.FC<InfrastructureRequirementsProps> = ({ infrastructure }) => (
+const InfrastructureRequirements: React.FC<InfrastructureRequirementsProps> = ({
+                                                                                   infrastructure,
+                                                                                   onUpdate
+                                                                               }) => (
     <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -101,9 +111,10 @@ const InfrastructureRequirements: React.FC<InfrastructureRequirementsProps> = ({
 
 interface TrainingRequirementsProps {
     training: ResourceRequirements['training'];
+    onUpdate?: (updates: Partial<typeof training>) => void;
 }
 
-const TrainingRequirements: React.FC<TrainingRequirementsProps> = ({ training }) => (
+const TrainingRequirements: React.FC<TrainingRequirementsProps> = ({ training, onUpdate }) => (
     <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -146,9 +157,10 @@ const TrainingRequirements: React.FC<TrainingRequirementsProps> = ({ training })
     </Card>
 );
 
-export const ResourceRequirementsView: React.FC<{ requirements: ResourceRequirements }> = ({
-                                                                                               requirements
-                                                                                           }) => {
+export const ResourceRequirementsView: React.FC<ResourceRequirementsViewProps> = ({
+                                                                                      requirements,
+                                                                                      onUpdate
+                                                                                  }) => {
     return (
         <div className="space-y-8">
             <div>
@@ -158,13 +170,33 @@ export const ResourceRequirementsView: React.FC<{ requirements: ResourceRequirem
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {requirements.teams_involved.map((team, index) => (
-                    <TeamAllocationCard key={index} team={team} />
+                    <TeamAllocationCard
+                        key={index}
+                        team={team}
+                        onUpdate={updates => {
+                            if (onUpdate) {
+                                const newTeams = [...requirements.teams_involved];
+                                newTeams[index] = { ...team, ...updates };
+                                onUpdate({ teams_involved: newTeams });
+                            }
+                        }}
+                    />
                 ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InfrastructureRequirements infrastructure={requirements.infrastructure} />
-                <TrainingRequirements training={requirements.training} />
+                <InfrastructureRequirements
+                    infrastructure={requirements.infrastructure}
+                    onUpdate={updates => onUpdate?.({
+                        infrastructure: { ...requirements.infrastructure, ...updates }
+                    })}
+                />
+                <TrainingRequirements
+                    training={requirements.training}
+                    onUpdate={updates => onUpdate?.({
+                        training: { ...requirements.training, ...updates }
+                    })}
+                />
             </div>
         </div>
     );

@@ -1,7 +1,15 @@
+export type AnalysisSection =
+    | 'market_analysis'
+    | 'team_perspectives'
+    | 'implementation_risks'
+    | 'user_impact'
+    | 'resource_requirements'
+    | 'recommendation';
 
 export interface DetailedAnalysisLayoutProps {
     analysis: DetailedAnalysis;
-    onUpdateAnalysis?: (section: string, updates: any) => Promise<void>;
+    isLoading?: boolean;
+    onUpdateAnalysis?: (section: AnalysisSection, updates: any) => Promise<void>;
 }
 
 export interface MarketAnalysis {
@@ -115,6 +123,14 @@ export interface ResourceRequirements {
     };
 }
 
+export interface Recommendation {
+    decision: 'proceed' | 'hold' | 'modify' | 'reject';
+    confidence_level: number;
+    key_factors: string[];
+    next_steps: string[];
+    alternatives: string[];
+}
+
 export interface DetailedAnalysis {
     id: string;
     feature_id: string;
@@ -124,11 +140,5 @@ export interface DetailedAnalysis {
     implementation_risks: ImplementationRisk;
     user_impact: UserImpact;
     resource_requirements: ResourceRequirements;
-    recommendation: {
-        decision: 'proceed' | 'hold' | 'modify' | 'reject';
-        confidence_level: number;
-        key_factors: string[];
-        next_steps: string[];
-        alternatives: string[];
-    };
+    recommendation: Recommendation;
 }
