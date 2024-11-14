@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import {
@@ -11,75 +13,47 @@ import { usePathname } from "next/navigation";
 export function NavigationDock() {
     const pathname = usePathname();
 
+    // Define your navigation links here
     const navigationLinks = [
         {
             title: "Analysis",
-            icon: (
-                <IconChartBar
-                    className={`h-full w-full ${
-                        pathname.includes('/simulated-analysis')
-                            ? 'text-blue-500'
-                            : 'text-neutral-500 dark:text-neutral-300'
-                    }`}
-                />
-            ),
+            icon: <IconChartBar />, // Ensure icon is ReactNode
             href: "/simulated-analysis",
         },
         {
             title: "Analytics",
-            icon: (
-                <IconChartPie
-                    className={`h-full w-full ${
-                        pathname.includes('/analytics')
-                            ? 'text-blue-500'
-                            : 'text-neutral-500 dark:text-neutral-300'
-                    }`}
-                />
-            ),
+            icon: <IconChartPie />,
             href: "/analytics",
         },
         {
             title: "Roadmap",
-            icon: (
-                <IconRoad
-                    className={`h-full w-full ${
-                        pathname.includes('/roadmap')
-                            ? 'text-blue-500'
-                            : 'text-neutral-500 dark:text-neutral-300'
-                    }`}
-                />
-            ),
+            icon: <IconRoad />,
             href: "/roadmap",
         },
         {
             title: "Chat",
-            icon: (
-                <IconMessageCircle
-                    className={`h-full w-full ${
-                        pathname.includes('/chat')
-                            ? 'text-blue-500'
-                            : 'text-neutral-500 dark:text-neutral-300'
-                    }`}
-                />
-            ),
+            icon: <IconMessageCircle />,
             href: "/chat",
         },
     ];
 
+    // Skip the NavigationDock if on the home page
+    if (pathname === "/") return null;
+
     return (
         <FloatingDock
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2"
-            items={navigationLinks}
+            desktopClassName="fixed bottom-4 left-1/2 transform -translate-x-1/2"
+            items={navigationLinks.map(link => ({
+                title: link.title,
+                href: link.href,
+                icon: React.cloneElement(link.icon, {
+                    className: `h-full w-full ${
+                        pathname.includes(link.href)
+                            ? 'text-blue-500'
+                            : 'text-neutral-500 dark:text-neutral-300'
+                    }`,
+                }),
+            }))}
         />
-    );
-}
-
-// Optional: Create a layout wrapper component
-export function DockLayout({ children }) {
-    return (
-        <div className="min-h-screen pb-20">
-            {children}
-            <NavigationDock />
-        </div>
     );
 }

@@ -5,7 +5,8 @@ import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
-import { TopNav } from "@/components/TopNav";
+import { NavigationDock } from "@/components/NavigationDock";
+import React from "react";
 
 const geistSans = localFont({
     src: "./fonts/GeistVF.woff",
@@ -25,26 +26,18 @@ export const metadata: Metadata = {
 
 function MainLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen">
-            {/* TopNav is rendered on all pages */}
-            <TopNav />
-            {/* Main content */}
-            <main className="flex-1">
-                {children}
-            </main>
+        <div className="min-h-screen pb-20">
+            {children}
+            <NavigationDock /> {/* NavigationDock will handle its own path logic */}
         </div>
     );
 }
 
-export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
-    children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
         <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
         <MainLayout>{children}</MainLayout>
         </body>
