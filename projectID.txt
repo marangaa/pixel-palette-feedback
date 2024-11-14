@@ -1,1 +1,1 @@
-Google Project ID = 853448425192    // This is the project ID
+Google Project ID = 853448425192
