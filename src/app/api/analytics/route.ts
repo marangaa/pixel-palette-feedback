@@ -231,6 +231,7 @@ export async function GET(req: Request) {
                     categories: analysisResult.categories,
                     insights: {}, // Add additional insights if needed
                     stats: analysisResult.meta,
+                    meta: analysisResult.meta,
                     isLatest: true
                 }
             })

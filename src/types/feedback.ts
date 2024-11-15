@@ -1,140 +1,84 @@
+export type FeedbackType =
+    | 'feature'
+    | 'bug'
+    | 'improvement'
+    | 'performance'
+    | 'praise'
+    | 'issue'
+    | 'general';
 
-export type Priority = 'high' | 'medium' | 'low';
-export type Sentiment = 'positive' | 'negative' | 'neutral';
-export type Status = 'active' | 'investigating' | 'resolved';
-
-export interface BaseItem {
+export interface FeedbackItem {
+    id: string;
     title: string;
-    description: string;
+    description?: string;
     count: number;
+    priority?: 'high' | 'medium' | 'low';
+    severity?: 'high' | 'medium' | 'low';
     tags?: string[];
+    type: FeedbackType;
+    status?: 'active' | 'investigating' | 'resolved';
+    sentiment?: 'positive' | 'neutral' | 'negative';
 }
 
-export interface FeatureRequest extends BaseItem {
-    priority: Priority;
-    sentiment: Sentiment;
-    impact: Priority;
+export interface SentimentDataPoint {
+    period: string;
+    sentiment_score: number;
+    mention_count: number;
 }
 
-export interface BugReport extends BaseItem {
-    severity: Priority;
-    status: Status;
-    impact: string;
-}
-
-export interface Improvement extends BaseItem {
-    type: 'ui' | 'performance' | 'workflow' | 'other';
-    impact: string;
-}
-
-export interface PerformanceIssue extends BaseItem {
-    severity: Priority;
-    impact: string;
-    area: string;
-}
-
-export interface PraiseFeedback extends BaseItem {
-    sentiment: Sentiment;
-    feature: string;
-}
-
-export interface IssueReport extends BaseItem {
-    severity: Priority;
-    status: Status;
-}
-
-export interface GeneralFeedback extends BaseItem {
-    sentiment: Sentiment;
+export interface UserSegment {
+    name: string;
+    count: number;
+    impact?: number;
 }
 
 export interface CategoryStats {
-    feature_requests: {
-        total_mentions: number;
-        avg_sentiment: number;
-        top_tags: string[];
-    };
-    bugs: {
-        total_bugs: number;
-        critical_count: number;
-        top_affected_areas: string[];
-    };
-    improvements: {
-        total_suggestions: number;
-        top_areas: string[];
-    };
-    performance: {
-        total_issues: number;
-        avg_severity: number;
-        top_areas: string[];
-    };
-    praise: {
-        total_praise: number;
-        top_features: string[];
-    };
-    issues: {
-        total_issues: number;
-        open_issues: number;
-        critical_count: number;
-    };
-    general_feedback: {
-        total_comments: number;
-        sentiment_distribution: {
-            positive: number;
-            negative: number;
-            neutral: number;
-        };
+    total_items: number;
+    avg_sentiment?: number;
+    top_tags?: string[];
+    priority_breakdown?: {
+        high: number;
+        medium: number;
+        low: number;
     };
 }
 
 export interface CategoryData {
-    feature_requests: {
-        items: FeatureRequest[];
-        stats: CategoryStats['feature_requests'];
-    };
-    bugs: {
-        items: BugReport[];
-        stats: CategoryStats['bugs'];
-    };
-    improvements: {
-        items: Improvement[];
-        stats: CategoryStats['improvements'];
-    };
-    performance: {
-        items: PerformanceIssue[];
-        stats: CategoryStats['performance'];
-    };
-    praise: {
-        items: PraiseFeedback[];
-        stats: CategoryStats['praise'];
-    };
-    issues: {
-        items: IssueReport[];
-        stats: CategoryStats['issues'];
-    };
-    general_feedback: {
-        items: GeneralFeedback[];
-        stats: CategoryStats['general_feedback'];
-    };
+    items: FeedbackItem[];
+    stats: CategoryStats;
 }
 
-export interface FeedbackMeta {
-    total_feedback_items: number;
-    analysis_timestamp: string;
-    top_overall_tags: string[];
-    sentiment_summary: {
-        positive: number;
-        negative: number;
-        neutral: number;
-    };
-}
+// This matches the categories object in FeedbackCategories.tsx
+export type CategoryKey =
+    | 'feature_requests'
+    | 'bugs'
+    | 'improvements'
+    | 'performance'
+    | 'praise'
+    | 'issues'
+    | 'general_feedback';
+
+export type FeedbackCategories = Record<CategoryKey, CategoryData>;
 
 export interface FeedbackAnalysis {
-    categories: CategoryData;
-    meta: FeedbackMeta;
+    categories: FeedbackCategories;
+    meta: {
+        total_feedback_items: number;
+        analysis_timestamp: string;
+        time_range: number;
+        sentiment_trend: SentimentDataPoint[];
+        user_segments: UserSegment[];
+        sentiment_summary: {
+            positive: number;
+            neutral: number;
+            negative: number;
+            average_score: number;
+        };
+    };
 }
 
 export interface ApiResponse {
     success: boolean;
-    data: FeedbackAnalysis;
+    data?: FeedbackAnalysis;
     error?: string;
 }

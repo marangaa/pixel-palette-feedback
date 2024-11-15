@@ -1,7 +1,7 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React, { Suspense } from 'react';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { motion } from 'framer-motion';
 import {
     CheckCircle2,
     XCircle,
@@ -12,205 +12,269 @@ import {
     BarChart3,
     SwitchCamera
 } from 'lucide-react';
-import type { Recommendation } from '@/types/detailed-analysis';
+import {
+    AnimatedCard,
+    ContentLoading,
+    AnimatePresence,
+    LoadingOverlay
+} from './LoadingComponents';
+import type { Recommendation } from '@/types/analysis';
 
 interface RecommendationViewProps {
     recommendation: Recommendation;
     onUpdate?: (updates: Partial<Recommendation>) => void;
+    isLoading?: boolean;
 }
+
+const MotionBadge = motion(Badge);
 
 type DecisionType = 'proceed' | 'hold' | 'modify' | 'reject';
 
 const getDecisionIcon = (decision: DecisionType) => {
-    switch (decision) {
-        case 'proceed':
-            return <CheckCircle2 className="w-8 h-8 text-green-500" />;
-        case 'hold':
-            return <PauseCircle className="w-8 h-8 text-yellow-500" />;
-        case 'modify':
-            return <SwitchCamera className="w-8 h-8 text-blue-500" />;
-        case 'reject':
-            return <XCircle className="w-8 h-8 text-red-500" />;
-        default:
-            return <AlertCircle className="w-8 h-8 text-gray-500" />;
-    }
+    const icons = {
+        proceed: <CheckCircle2 className="w-8 h-8 text-green-500" />,
+        hold: <PauseCircle className="w-8 h-8 text-yellow-500" />,
+        modify: <SwitchCamera className="w-8 h-8 text-blue-500" />,
+        reject: <XCircle className="w-8 h-8 text-red-500" />
+    };
+    return icons[decision] || <AlertCircle className="w-8 h-8 text-gray-500" />;
 };
 
 const getDecisionColor = (decision: DecisionType) => {
-    switch (decision) {
-        case 'proceed':
-            return 'bg-green-100 text-green-800 border-green-200';
-        case 'hold':
-            return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-        case 'modify':
-            return 'bg-blue-100 text-blue-800 border-blue-200';
-        case 'reject':
-            return 'bg-red-100 text-red-800 border-red-200';
-        default:
-            return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
+    const colors = {
+        proceed: 'bg-green-100 text-green-800 border-green-200',
+        hold: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        modify: 'bg-blue-100 text-blue-800 border-blue-200',
+        reject: 'bg-red-100 text-red-800 border-red-200'
+    };
+    return colors[decision] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
-interface DecisionCardProps {
+const DecisionCard: React.FC<{
     decision: DecisionType;
     confidenceLevel: number;
-    onUpdate?: (updates: { decision: DecisionType } | { confidence_level: number }) => void;
-}
-
-const DecisionCard: React.FC<DecisionCardProps> = ({
-                                                       decision,
-                                                       confidenceLevel,
-                                                       onUpdate
-                                                   }) => (
-    <Card className="md:col-span-2">
-        <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-6">
+    isLoading?: boolean;
+}> = ({ decision, confidenceLevel, isLoading }) => (
+    <AnimatedCard className="md:col-span-2">
+        <CardContent className="pt-6 relative">
+            {isLoading && <LoadingOverlay message="Updating decision..." />}
+            <motion.div
+                className="flex items-center justify-between mb-6"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+            >
                 <div className="flex items-center gap-4">
-                    {getDecisionIcon(decision)}
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        {getDecisionIcon(decision)}
+                    </motion.div>
                     <div>
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <motion.h3
+                            className="text-xl font-semibold text-gray-900"
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
                             Recommended Decision
-                        </h3>
+                        </motion.h3>
                         <div className="flex items-center gap-2 mt-1">
-                            <Badge className={getDecisionColor(decision)}>
+                            <MotionBadge
+                                className={getDecisionColor(decision)}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.4 }}
+                            >
                                 {decision.toUpperCase()}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
+                            </MotionBadge>
+                            <motion.span
+                                className="text-sm text-gray-500"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                            >
                                 {confidenceLevel}% confidence
-                            </span>
+                            </motion.span>
                         </div>
                     </div>
                 </div>
-                <Progress
-                    value={confidenceLevel}
+                <motion.div
                     className="w-32"
-                />
-            </div>
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.6 }}
+                >
+                    <Progress value={confidenceLevel} />
+                </motion.div>
+            </motion.div>
         </CardContent>
-    </Card>
+    </AnimatedCard>
 );
 
-interface KeyFactorsCardProps {
+const KeyFactorsCard: React.FC<{
     factors: string[];
-    onUpdate?: (updates: { key_factors: string[] }) => void;
-}
-
-const KeyFactorsCard: React.FC<KeyFactorsCardProps> = ({ factors, onUpdate }) => (
-    <Card>
+    onUpdate?: (updates: any) => void;
+    isLoading?: boolean;
+}> = ({ factors, onUpdate, isLoading }) => (
+    <AnimatedCard>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
                 Key Decision Factors
             </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+            {isLoading && <LoadingOverlay message="Updating factors..." />}
             <ul className="space-y-4">
                 {factors.map((factor, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                    <motion.li
+                        key={index}
+                        className="flex items-start gap-3"
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 * index }}
+                    >
                         <ArrowRight className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
                         <span className="text-gray-600">{factor}</span>
-                    </li>
+                    </motion.li>
                 ))}
             </ul>
         </CardContent>
-    </Card>
+    </AnimatedCard>
 );
 
-interface NextStepsCardProps {
+const NextStepsCard: React.FC<{
     steps: string[];
-    onUpdate?: (updates: { next_steps: string[] }) => void;
-}
-
-const NextStepsCard: React.FC<NextStepsCardProps> = ({ steps, onUpdate }) => (
-    <Card>
+    onUpdate?: (updates: any) => void;
+    isLoading?: boolean;
+}> = ({ steps, isLoading }) => (
+    <AnimatedCard>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <ListChecks className="w-5 h-5" />
                 Recommended Next Steps
             </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+            {isLoading && <LoadingOverlay message="Updating next steps..." />}
             <ul className="space-y-4">
                 {steps.map((step, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-sm font-medium">
+                    <motion.li
+                        key={index}
+                        className="flex items-start gap-3"
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 * index }}
+                    >
+                        <motion.div
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-sm font-medium"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.2 * index }}
+                        >
                             {index + 1}
-                        </div>
+                        </motion.div>
                         <span className="text-gray-600">{step}</span>
-                    </li>
+                    </motion.li>
                 ))}
             </ul>
         </CardContent>
-    </Card>
+    </AnimatedCard>
 );
 
-interface AlternativesCardProps {
+const AlternativesCard: React.FC<{
     alternatives: string[];
-    onUpdate?: (updates: { alternatives: string[] }) => void;
-}
-
-const AlternativesCard: React.FC<AlternativesCardProps> = ({ alternatives, onUpdate }) => (
-    <Card className="md:col-span-2">
+    isLoading?: boolean;
+}> = ({ alternatives, isLoading }) => (
+    <AnimatedCard className="md:col-span-2">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <SwitchCamera className="w-5 h-5" />
                 Alternative Approaches
             </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+            {isLoading && <LoadingOverlay message="Updating alternatives..." />}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {alternatives.map((alternative, index) => (
-                    <div
+                    <motion.div
                         key={index}
                         className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 * index }}
                     >
                         <div className="flex items-start gap-3">
-                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-sm font-medium border border-gray-200">
+                            <motion.div
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-sm font-medium border border-gray-200"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.2 * index }}
+                            >
                                 {String.fromCharCode(65 + index)}
-                            </div>
+                            </motion.div>
                             <span className="text-gray-600">{alternative}</span>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
         </CardContent>
-    </Card>
+    </AnimatedCard>
 );
 
 export const RecommendationView: React.FC<RecommendationViewProps> = ({
                                                                           recommendation,
-                                                                          onUpdate
+                                                                          onUpdate,
+                                                                          isLoading = false
                                                                       }) => {
+    if (isLoading) {
+        return <ContentLoading className="min-h-[400px]" />;
+    }
+
     return (
-        <div className="space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900">Final Recommendation</h2>
-                <p className="text-gray-600">Analysis conclusion and next steps</p>
+        <AnimatePresence>
+            <div className="space-y-8">
+                <motion.div
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h2 className="text-2xl font-bold text-gray-900">Final Recommendation</h2>
+                    <p className="text-gray-600">Analysis conclusion and next steps</p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Suspense fallback={<ContentLoading />}>
+                        <DecisionCard
+                            decision={recommendation.decision}
+                            confidenceLevel={recommendation.confidence_level}
+                            onUpdate={updates => onUpdate?.({ ...recommendation, ...updates })}
+                            isLoading={isLoading}
+                        />
+
+                        <KeyFactorsCard
+                            factors={recommendation.key_factors}
+                            onUpdate={updates => onUpdate?.(updates)}
+                            isLoading={isLoading}
+                        />
+
+                        <NextStepsCard
+                            steps={recommendation.next_steps}
+                            onUpdate={updates => onUpdate?.(updates)}
+                            isLoading={isLoading}
+                        />
+
+                        <AlternativesCard
+                            alternatives={recommendation.alternatives}
+                            onUpdate={updates => onUpdate?.(updates)}
+                            isLoading={isLoading}
+                        />
+                    </Suspense>
+                </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <DecisionCard
-                    decision={recommendation.decision}
-                    confidenceLevel={recommendation.confidence_level}
-                    onUpdate={updates => onUpdate?.({ ...recommendation, ...updates })}
-                />
-
-                <KeyFactorsCard
-                    factors={recommendation.key_factors}
-                    onUpdate={updates => onUpdate?.(updates)}
-                />
-
-                <NextStepsCard
-                    steps={recommendation.next_steps}
-                    onUpdate={updates => onUpdate?.(updates)}
-                />
-
-                <AlternativesCard
-                    alternatives={recommendation.alternatives}
-                    onUpdate={updates => onUpdate?.(updates)}
-                />
-            </div>
-        </div>
+        </AnimatePresence>
     );
 };
 

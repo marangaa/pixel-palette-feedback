@@ -1,10 +1,10 @@
 import React from 'react';
 import { categories } from './FeedbackCategories';
-import { CategoryData } from '@/types/feedback';
+import type { CategoryKey, CategoryData, FeedbackItem } from '@/types/feedback';
 
 interface CategoryViewProps {
-    category: keyof typeof categories;
-    data?: CategoryData[keyof CategoryData];
+    category: CategoryKey;
+    data?: CategoryData;
 }
 
 const TagList: React.FC<{ tags?: string[] }> = ({ tags }) => {
@@ -24,21 +24,28 @@ const TagList: React.FC<{ tags?: string[] }> = ({ tags }) => {
     );
 };
 
-const StatusBadge: React.FC<{
+interface BadgeProps {
     label: string;
     type: 'priority' | 'severity' | 'status' | 'sentiment';
     value?: string;
-}> = ({ label, type, value }) => {
+}
+
+const StatusBadge: React.FC<BadgeProps> = ({ label, type, value }) => {
     if (!value) return null;
 
     const getColorClass = () => {
-        if (value === 'high' || value === 'active' || value === 'negative') {
-            return 'bg-red-100 text-red-800';
+        switch (value.toLowerCase()) {
+            case 'high':
+            case 'active':
+            case 'negative':
+                return 'bg-red-100 text-red-800';
+            case 'medium':
+            case 'investigating':
+            case 'neutral':
+                return 'bg-yellow-100 text-yellow-800';
+            default:
+                return 'bg-green-100 text-green-800';
         }
-        if (value === 'medium' || value === 'investigating' || value === 'neutral') {
-            return 'bg-yellow-100 text-yellow-800';
-        }
-        return 'bg-green-100 text-green-800';
     };
 
     return (
@@ -48,7 +55,48 @@ const StatusBadge: React.FC<{
     );
 };
 
-const EmptyCategory: React.FC<{ category: keyof typeof categories }> = ({ category }) => {
+const ItemBadges: React.FC<{ item: FeedbackItem }> = ({ item }) => (
+    <div className="flex items-center space-x-2">
+        <span className="text-sm font-medium text-gray-500">
+            {item.count || 0} mentions
+        </span>
+        <StatusBadge
+            label="Sentiment"
+            type="sentiment"
+            value={item.sentiment}
+        />
+        <StatusBadge
+            label="Priority"
+            type="priority"
+            value={item.priority}
+        />
+        <StatusBadge
+            label="Severity"
+            type="severity"
+            value={item.severity}
+        />
+        <StatusBadge
+            label="Status"
+            type="status"
+            value={item.status}
+        />
+    </div>
+);
+
+const StatCard: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
+    <div className="bg-gray-50 p-4 rounded-lg">
+        <p className="text-sm text-gray-500 capitalize">
+            {label.split('_').join(' ')}
+        </p>
+        <p className="text-2xl font-bold text-gray-800">
+            {typeof value === 'number' && !Number.isInteger(value)
+                ? value.toFixed(1)
+                : value}
+        </p>
+    </div>
+);
+
+const EmptyCategory: React.FC<{ category: CategoryKey }> = ({ category }) => {
     const categoryInfo = categories[category];
     return (
         <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -73,40 +121,9 @@ const EmptyCategory: React.FC<{ category: keyof typeof categories }> = ({ catego
 export const CategoryView: React.FC<CategoryViewProps> = ({ category, data }) => {
     const categoryInfo = categories[category];
 
-    // Handle case where data is undefined
     if (!data?.items) {
         return <EmptyCategory category={category} />;
     }
-
-    const renderBadges = (item: any) => {
-        return (
-            <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-500">
-                    {item.count || 0} mentions
-                </span>
-                <StatusBadge
-                    label="Sentiment"
-                    type="sentiment"
-                    value={item.sentiment}
-                />
-                <StatusBadge
-                    label="Priority"
-                    type="priority"
-                    value={item.priority}
-                />
-                <StatusBadge
-                    label="Severity"
-                    type="severity"
-                    value={item.severity}
-                />
-                <StatusBadge
-                    label="Status"
-                    type="status"
-                    value={item.status}
-                />
-            </div>
-        );
-    };
 
     return (
         <div className="space-y-4">
@@ -126,31 +143,26 @@ export const CategoryView: React.FC<CategoryViewProps> = ({ category, data }) =>
                 {data.stats && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
                         {Object.entries(data.stats)
-                            .filter(([_, value]) => !Array.isArray(value)) // Filter out array values like tags
+                            .filter(([key, value]) => !Array.isArray(value))
                             .map(([key, value]) => (
-                                <div key={key} className="bg-gray-50 p-4 rounded-lg">
-                                    <p className="text-sm text-gray-500 capitalize">
-                                        {key.split('_').join(' ')}
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {typeof value === 'number' && !Number.isInteger(value)
-                                            ? value.toFixed(1)
-                                            : value}
-                                    </p>
-                                </div>
+                                <StatCard
+                                    key={key}
+                                    label={key}
+                                    value={value as number}
+                                />
                             ))}
                     </div>
                 )}
 
                 <div className="space-y-4">
-                    {data.items.map((item, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    {data.items.map((item) => (
+                        <div key={item.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="font-medium text-gray-800">{item.title}</p>
                                     <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                                 </div>
-                                {renderBadges(item)}
+                                <ItemBadges item={item} />
                             </div>
                             <TagList tags={item.tags} />
                         </div>

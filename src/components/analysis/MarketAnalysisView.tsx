@@ -8,7 +8,8 @@ import {
     Tooltip,
     ResponsiveContainer,
     PieChart,
-    Pie
+    Pie,
+    Cell
 } from 'recharts';
 import {
     Table,
@@ -21,7 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MarketAnalysis } from '@/types/detailed-analysis';
+import { MarketAnalysis } from '@/types/analysis';
 
 interface MarketAnalysisViewProps {
     analysis: MarketAnalysis;

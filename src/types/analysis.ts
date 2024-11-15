@@ -7,9 +7,9 @@ export type AnalysisSection =
     | 'recommendation';
 
 export interface DetailedAnalysisLayoutProps {
-    analysis: DetailedAnalysis;
+    analysis: Analysis;
     isLoading?: boolean;
-    onUpdateAnalysis?: (section: AnalysisSection, updates: any) => Promise<void>;
+    onUpdateAnalysis?: <T extends Analysis[AnalysisSection]>(section: AnalysisSection, updates: T) => Promise<void>;
 }
 
 export interface MarketAnalysis {
@@ -40,8 +40,11 @@ export interface MarketAnalysis {
 }
 
 export interface TeamPerspective {
-    role: string;
+    sentiment: number;
+    team: string;
     concerns: string[];
+    suggestions: string[];
+    role: string;
     priorities: string[];
     constraints: string[];
     expertise_areas: string[];
@@ -131,7 +134,7 @@ export interface Recommendation {
     alternatives: string[];
 }
 
-export interface DetailedAnalysis {
+export interface Analysis {
     id: string;
     feature_id: string;
     timestamp: string;

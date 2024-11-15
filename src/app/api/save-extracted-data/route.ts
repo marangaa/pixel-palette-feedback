@@ -30,17 +30,23 @@ export async function POST(req: Request) {
         const conversationData = {
             userId,
             sessionId,
-            messages: body.messages,
+            messages: {
+                create: body.messages
+            },
             extractedData: {
-                satisfaction: body.extractedData.satisfaction ?? 0,
-                pain_points: body.extractedData.pain_points ?? [],
-                feature_requests: body.extractedData.feature_requests ?? [],
-                contact: {
-                    method: body.extractedData.contact?.method ?? null,
-                    value: body.extractedData.contact?.value ?? null
-                },
-                sentiment: body.extractedData.sentiment ?? 'neutral',
-                key_themes: body.extractedData.key_themes ?? []
+                create: {
+                    satisfaction: body.extractedData.satisfaction ?? 0,
+                    pain_points: body.extractedData.pain_points ?? [],
+                    feature_requests: body.extractedData.feature_requests ?? [],
+                    contact: {
+                        create: {
+                            method: body.extractedData.contact?.method ?? null,
+                            value: body.extractedData.contact?.value ?? null
+                        }
+                    },
+                    sentiment: body.extractedData.sentiment ?? 'neutral',
+                    key_themes: body.extractedData.key_themes ?? []
+                }
             },
             timestamp: new Date()
         };

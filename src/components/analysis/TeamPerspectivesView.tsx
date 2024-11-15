@@ -3,101 +3,123 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import type { TeamPerspective } from '@/types/detailed-analysis';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer
+} from 'recharts';
+import { TeamPerspective } from '@/types/analysis';
 
 interface TeamPerspectivesViewProps {
     perspectives: TeamPerspective[];
-    onUpdate?: (updates: Partial<{ team_perspectives: TeamPerspective[] }>) => void;
+    onUpdate?: (updates: TeamPerspective[]) => void;
 }
 
-interface TeamMemberCardProps {
+const SentimentOverview: React.FC<{ perspectives: TeamPerspective[] }> = ({ perspectives }) => {
+    const data = perspectives.map(p => ({
+        team: p.team,
+        sentiment: p.sentiment * 100 // Convert to percentage
+    }));
+
+    return (
+        <Card className="col-span-2">
+            <CardHeader>
+                <CardTitle>Team Sentiment Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="team" />
+                            <YAxis domain={[0, 100]} />
+                            <Tooltip
+                                formatter={(value: number) => `${value.toFixed(1)}%`}
+                            />
+                            <Bar
+                                dataKey="sentiment"
+                                fill="#8884d8"
+                                label={{ position: 'top', formatter: (value: number) => `${value.toFixed(1)}%` }}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+const TeamMemberCard: React.FC<{
     perspective: TeamPerspective;
     onUpdate?: (updates: Partial<TeamPerspective>) => void;
-}
+}> = ({ perspective, onUpdate }) => {
+    const getInitials = (team: string) =>
+        team.split(' ').map(word => word[0].toUpperCase()).join('');
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ perspective, onUpdate }) => {
     return (
-        <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center gap-4">
+        <Card>
+            <CardHeader className="flex flex-row items-center space-x-4">
                 <Avatar className="h-12 w-12">
-                    <AvatarFallback>
-                        {perspective.role.split(' ').map(word => word[0]).join('')}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(perspective.team)}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                    <CardTitle className="text-lg">{perspective.role}</CardTitle>
-                    <div className="flex items-center gap-2">
-                        <Progress value={perspective.confidence_level * 100} className="w-24" />
-                        <span className="text-sm text-gray-600">
-                            {Math.round(perspective.confidence_level * 100)}% confidence
+                <div className="flex-1">
+                    <CardTitle>{perspective.team}</CardTitle>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <Progress
+                            value={perspective.sentiment * 100}
+                            className="w-24"
+                        />
+                        <span className="text-sm text-gray-500">
+                            {(perspective.sentiment * 100).toFixed(1)}% positive
                         </span>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {/* Concerns */}
+                    {/* Concerns Section */}
                     <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Concerns</h4>
-                        <ul className="list-disc list-inside space-y-1">
-                            {perspective.concerns.map((concern, index) => (
-                                <li key={index} className="text-sm text-gray-600">{concern}</li>
+                        <h4 className="font-medium text-gray-900 mb-2">Key Concerns</h4>
+                        <ul className="space-y-2">
+                            {perspective.concerns.map((concern, i) => (
+                                <li key={i} className="flex items-start space-x-2">
+                                    <span className="text-red-500">•</span>
+                                    <span className="text-sm text-gray-600">{concern}</span>
+                                </li>
                             ))}
                         </ul>
                     </div>
 
-                    {/* Priorities */}
+                    {/* Suggestions Section */}
                     <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Priorities</h4>
-                        <ul className="list-disc list-inside space-y-1">
-                            {perspective.priorities.map((priority, index) => (
-                                <li key={index} className="text-sm text-gray-600">{priority}</li>
+                        <h4 className="font-medium text-gray-900 mb-2">Suggestions</h4>
+                        <ul className="space-y-2">
+                            {perspective.suggestions.map((suggestion, i) => (
+                                <li key={i} className="flex items-start space-x-2">
+                                    <span className="text-green-500">•</span>
+                                    <span className="text-sm text-gray-600">{suggestion}</span>
+                                </li>
                             ))}
                         </ul>
                     </div>
 
-                    {/* Expertise Areas */}
-                    <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Expertise Areas</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {perspective.expertise_areas.map((area, index) => (
-                                <Badge key={index} variant="secondary">
-                                    {area}
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Estimated Effort */}
-                    <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Estimated Effort</h4>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-sm text-gray-500">Timeline</p>
-                                    <p className="font-medium">{perspective.estimated_effort.time}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-500">Required Resources</p>
-                                    <ul className="list-disc list-inside">
-                                        {perspective.estimated_effort.resources.map((resource, index) => (
-                                            <li key={index} className="text-sm">{resource}</li>
-                                        ))}
-                                    </ul>
+                    {/* Additional Insights */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="space-y-2">
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Primary Focus Areas</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {perspective.suggestions.map((suggestion, i) => (
+                                        <Badge key={i} variant="secondary">
+                                            {suggestion}
+                                        </Badge>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Constraints */}
-                    <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Constraints</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {perspective.constraints.map((constraint, index) => (
-                                <Badge key={index} variant="destructive">
-                                    {constraint}
-                                </Badge>
-                            ))}
                         </div>
                     </div>
                 </div>
@@ -110,14 +132,50 @@ export const TeamPerspectivesView: React.FC<TeamPerspectivesViewProps> = ({
                                                                               perspectives,
                                                                               onUpdate
                                                                           }) => {
+    if (!perspectives || perspectives.length === 0) {
+        return (
+            <div className="p-4 text-center">
+                <p className="text-gray-500">No team perspectives available.</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900">Team Perspectives</h2>
-                <p className="text-gray-600">Analysis from different team roles and specialties</p>
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+                <SentimentOverview perspectives={perspectives} />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Overall Team Alignment</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-500">Common Concerns</h4>
+                                <div className="mt-2">
+                                    {perspectives.reduce((acc, p) => [...acc, ...p.concerns], [] as string[])
+                                        .reduce<Record<string, number>>((acc, concern) => {
+                                            acc[concern] = (acc[concern] || 0) + 1;
+                                            return acc;
+                                        }, {})
+                                        .entries()
+                                        .sort(([, a]: [string, number], [, b]: [string, number]) => b - a)
+                                        .slice(0, 5)
+                                        .map(([concern, count]: [string, number], i: number) => (
+                                            <div key={i} className="flex items-center justify-between py-1">
+                                                <span className="text-sm">{concern}</span>
+                                                <Badge variant="secondary">{count}</Badge>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6">
                 {perspectives.map((perspective, index) => (
                     <TeamMemberCard
                         key={index}
@@ -126,7 +184,7 @@ export const TeamPerspectivesView: React.FC<TeamPerspectivesViewProps> = ({
                             if (onUpdate) {
                                 const newPerspectives = [...perspectives];
                                 newPerspectives[index] = { ...perspective, ...updates };
-                                onUpdate({ team_perspectives: newPerspectives });
+                                onUpdate(newPerspectives);
                             }
                         }}
                     />

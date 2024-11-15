@@ -6,7 +6,7 @@ import { ImplementationRisksView } from './ImplementationRisksView';
 import { UserImpactView } from './UserImpactView';
 import { ResourceRequirementsView } from './ResourceRequirementsView';
 import { RecommendationView } from './RecommendationView';
-import { DetailedAnalysisLayoutProps } from '@/types/detailed-analysis';
+import { DetailedAnalysisLayoutProps } from '@/types/analysis';
 
 const DetailedAnalysisLayout: React.FC<DetailedAnalysisLayoutProps> = ({
                                                                            analysis,

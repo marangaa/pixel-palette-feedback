@@ -4,14 +4,13 @@ import {
     ChevronRight,
     Bug,
     Lightbulb,
-    Heart,
     MessageSquare,
     PlusSquare,
     ZapIcon,
     ThumbsUp,
     XCircle
 } from 'lucide-react';
-import type { CategoryData } from '@/types/feedback';
+import type { CategoryKey } from '@/types/feedback';
 
 export const categories = {
     feature_requests: {
@@ -65,8 +64,6 @@ export const categories = {
     }
 } as const;
 
-export type CategoryKey = keyof typeof categories;
-
 interface NavigationButtonProps {
     onClick: () => void;
     direction: 'left' | 'right';
@@ -114,8 +111,8 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({ category, isSelected, o
 };
 
 interface FeedbackNavigationProps {
-    currentCategory: keyof CategoryData;
-    onCategoryChange: (category: keyof CategoryData | 'prev' | 'next') => void;
+    currentCategory: CategoryKey;
+    onCategoryChange: (category: CategoryKey | 'prev' | 'next') => void;
 }
 
 export const FeedbackNavigation: React.FC<FeedbackNavigationProps> = ({
@@ -130,7 +127,7 @@ export const FeedbackNavigation: React.FC<FeedbackNavigationProps> = ({
             />
 
             <div className="flex items-center space-x-2">
-                {(Object.keys(categories) as Array<keyof CategoryData>).map((key) => (
+                {(Object.keys(categories) as CategoryKey[]).map((key) => (
                     <CategoryButton
                         key={key}
                         category={key}

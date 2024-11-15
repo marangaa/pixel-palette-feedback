@@ -172,10 +172,6 @@ export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
         const days = parseInt(url.searchParams.get('days') || '30');
-        const filter = url.searchParams.get('filter') || 'all';
-        const sort = url.searchParams.get('sort') || 'count';
-        const page = parseInt(url.searchParams.get('page') || '1');
-        const limit = parseInt(url.searchParams.get('limit') || '50');
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -232,19 +228,84 @@ export async function GET(req: Request) {
         const analysisResult = JSON.parse(result.response.text());
 
         // Add unique IDs to items if they don't exist
-        const processedResult = {
+        interface FeedbackItem {
+            id: string;
+            title: string;
+            description: string;
+            count: number;
+            sentiment_score?: number;
+            priority?: string;
+            impact?: string;
+            status?: string;
+            tags?: string[];
+            user_segments?: string[];
+            related_conversations?: string[];
+            first_mentioned?: string;
+            last_mentioned?: string;
+            severity?: string;
+            affected_areas?: string[];
+            first_reported?: string;
+            last_reported?: string;
+        }
+
+        interface FeedbackCategory {
+            items: FeedbackItem[];
+            stats: {
+                total_requests?: number;
+                avg_sentiment?: number;
+                top_tags?: string[];
+                priority_breakdown?: {
+                    high: number;
+                    medium: number;
+                    low: number;
+                };
+                total_bugs?: number;
+                critical_count?: number;
+                resolved_count?: number;
+                top_affected_areas?: string[];
+            };
+        }
+
+        interface FeedbackAnalysisResult {
+            categories: {
+                feature_requests: FeedbackCategory;
+                bugs: FeedbackCategory;
+            };
+            meta: {
+                total_feedback_items: number;
+                analysis_timestamp: string;
+                time_range: number;
+                sentiment_summary: {
+                    positive: number;
+                    neutral: number;
+                    negative: number;
+                    average_score: number;
+                };
+                user_segments: {
+                    name: string;
+                    count: number;
+                }[];
+                trending_tags: {
+                    tag: string;
+                    count: number;
+                    trend: number;
+                }[];
+            };
+        }
+
+        const processedResult: FeedbackAnalysisResult = {
             ...analysisResult,
             categories: {
                 feature_requests: {
                     ...analysisResult.categories.feature_requests,
-                    items: analysisResult.categories.feature_requests.items.map(item => ({
+                    items: analysisResult.categories.feature_requests.items.map((item: FeedbackItem) => ({
                         ...item,
                         id: item.id || crypto.randomUUID()
                     }))
                 },
                 bugs: {
                     ...analysisResult.categories.bugs,
-                    items: analysisResult.categories.bugs.items.map(item => ({
+                    items: analysisResult.categories.bugs.items.map((item: FeedbackItem) => ({
                         ...item,
                         id: item.id || crypto.randomUUID()
                     }))
@@ -261,7 +322,7 @@ export async function GET(req: Request) {
             prisma.feedbackAnalysis.create({
                 data: {
                     timeRange: days,
-                    categories: processedResult.categories,
+                    categories: JSON.parse(JSON.stringify(processedResult.categories)),
                     meta: processedResult.meta,
                     isLatest: true,
                     timestamp: new Date()

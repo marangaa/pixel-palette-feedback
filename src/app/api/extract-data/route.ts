@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         });
 
         const conversation = body.messages
-            .map((msg: any) => `${msg.role.toUpperCase()}: ${msg.content}`)
+            .map((msg: { role: string; content: string }) => `${msg.role.toUpperCase()}: ${msg.content}`)
             .join("\n\n");
 
         console.log('Processing conversation:', conversation);

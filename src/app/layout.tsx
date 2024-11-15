@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 function MainLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen pb-20">
+        <div className="min-h-screen">
             {children}
             <NavigationDock /> {/* NavigationDock will handle its own path logic */}
         </div>

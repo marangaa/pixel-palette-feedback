@@ -4,15 +4,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie } from 'recharts';
-import type { FeedbackItem, SentimentDataPoint, UserSegment } from './AnalyticsDashboard';
+import type { FeedbackAnalysis, FeedbackItem, SentimentDataPoint, UserSegment } from '@/types/feedback';
 
 interface FeedbackItemProps {
     item: FeedbackItem;
-    type: FeedbackItem['type'];
     onAnalyze: (item: FeedbackItem) => void;
 }
 
-const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, type, onAnalyze }) => {
+const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, onAnalyze }) => {
     const getPriorityColor = (priority: string | undefined): string => {
         const colors = {
             high: 'bg-red-100 text-red-800',
@@ -22,10 +21,17 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, type, onAnalyze }) =>
         return colors[priority as keyof typeof colors] || colors.medium;
     };
 
-    const getTypeIcon = (feedbackType: FeedbackItem['type']): string => {
-        if (feedbackType === 'bug') return '🐛';
-        if (feedbackType === 'feature') return '✨';
-        return '💡';
+    const getTypeIcon = (type: FeedbackItem['type']): string => {
+        const icons = {
+            bug: '🐛',
+            feature: '✨',
+            improvement: '💡',
+            performance: '⚡',
+            praise: '❤️',
+            issue: '⚠️',
+            general: '💭'
+        };
+        return icons[type] || '💭';
     };
 
     return (
@@ -34,7 +40,7 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, type, onAnalyze }) =>
             className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 hover:border-purple-200"
         >
             <div className="flex items-start space-x-3">
-                <span className="text-xl">{getTypeIcon(type)}</span>
+                <span className="text-xl">{getTypeIcon(item.type)}</span>
                 <div>
                     <h4 className="font-medium text-gray-900">{item.title}</h4>
                     {item.description && (
@@ -51,6 +57,11 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, type, onAnalyze }) =>
                                 {tag}
                             </span>
                         ))}
+                        {item.status && (
+                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-600">
+                                {item.status}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -62,106 +73,27 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item, type, onAnalyze }) =>
     );
 };
 
-interface SentimentTrendProps {
-    data: SentimentDataPoint[];
-}
-
-const SentimentTrend: React.FC<SentimentTrendProps> = ({ data }) => (
-    <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="period" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
-                <Line yAxisId="left" type="monotone" dataKey="sentiment_score" stroke="#8884d8" />
-                <Line yAxisId="right" type="monotone" dataKey="mention_count" stroke="#82ca9d" />
-            </LineChart>
-        </ResponsiveContainer>
-    </div>
-);
-
-interface UserSegmentDistributionProps {
-    segments: UserSegment[];
-}
-
-const UserSegmentDistribution: React.FC<UserSegmentDistributionProps> = ({ segments }) => (
-    <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-                <Pie
-                    data={segments}
-                    dataKey="count"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    fill="#8884d8"
-                    label
-                />
-                <Tooltip />
-            </PieChart>
-        </ResponsiveContainer>
-    </div>
-);
-
-interface RelatedItemsProps {
-    items: FeedbackItem[];
-    onSelect: (item: FeedbackItem) => void;
-}
-
-const RelatedItems: React.FC<RelatedItemsProps> = ({ items, onSelect }) => (
-    <div className="space-y-2">
-        {items.map((item, index) => (
-            <div
-                key={index}
-                onClick={() => onSelect(item)}
-                className="p-2 hover:bg-gray-50 rounded-md cursor-pointer flex justify-between items-center"
-            >
-                <div>
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-gray-500">{item.type}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">{item.count} mentions</span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-            </div>
-        ))}
-    </div>
-);
-
 interface FeedbackOverviewProps {
-    data: {
-        categories: {
-            feature_requests: { items: FeedbackItem[] };
-            bugs: { items: FeedbackItem[] };
-            improvements: { items: FeedbackItem[] };
-        };
-        meta: {
-            sentiment_trend: SentimentDataPoint[];
-            user_segments: UserSegment[];
-        };
-    };
+    data: FeedbackAnalysis;
     onAnalyze: (item: FeedbackItem) => void;
 }
 
 const FeedbackOverview: React.FC<FeedbackOverviewProps> = ({ data, onAnalyze }) => {
+    // Helper function to map category items with type
+    const mapCategoryItems = (
+        items: FeedbackItem[],
+        type: FeedbackItem['type']
+    ): FeedbackItem[] => items.map(item => ({ ...item, type }));
+
     // Combine and sort all feedback items
     const allItems = [
-        ...(data.categories.feature_requests.items || []).map(item => ({
-            ...item,
-            type: 'feature' as const
-        })),
-        ...(data.categories.bugs.items || []).map(item => ({
-            ...item,
-            type: 'bug' as const
-        })),
-        ...(data.categories.improvements.items || []).map(item => ({
-            ...item,
-            type: 'improvement' as const
-        }))
+        ...mapCategoryItems(data.categories.feature_requests.items, 'feature'),
+        ...mapCategoryItems(data.categories.bugs.items, 'bug'),
+        ...mapCategoryItems(data.categories.improvements.items, 'improvement'),
+        ...mapCategoryItems(data.categories.performance.items, 'performance'),
+        ...mapCategoryItems(data.categories.praise.items, 'praise'),
+        ...mapCategoryItems(data.categories.issues.items, 'issue'),
+        ...mapCategoryItems(data.categories.general_feedback.items, 'general')
     ].sort((a, b) => b.count - a.count);
 
     return (
@@ -177,11 +109,10 @@ const FeedbackOverview: React.FC<FeedbackOverviewProps> = ({ data, onAnalyze }) 
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {allItems.map((item, index) => (
+                        {allItems.map((item) => (
                             <FeedbackItem
-                                key={index}
+                                key={item.id}
                                 item={item}
-                                type={item.type}
                                 onAnalyze={onAnalyze}
                             />
                         ))}
@@ -190,23 +121,48 @@ const FeedbackOverview: React.FC<FeedbackOverviewProps> = ({ data, onAnalyze }) 
             </Card>
 
             <div className="space-y-6">
-                {/* Sentiment Trends Card */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Sentiment Trends</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <SentimentTrend data={data.meta.sentiment_trend} />
+                        <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={data.meta.sentiment_trend}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="period" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="sentiment_score" stroke="#8884d8" />
+                                    <Line type="monotone" dataKey="mention_count" stroke="#82ca9d" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
                 </Card>
 
-                {/* User Segments Card */}
                 <Card>
                     <CardHeader>
                         <CardTitle>User Segments</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <UserSegmentDistribution segments={data.meta.user_segments} />
+                        <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={data.meta.user_segments}
+                                        dataKey="count"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={70}
+                                        fill="#8884d8"
+                                        label
+                                    />
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
                         <div className="mt-4">
                             <Table>
                                 <TableHeader>
@@ -223,7 +179,7 @@ const FeedbackOverview: React.FC<FeedbackOverviewProps> = ({ data, onAnalyze }) 
                                             <TableCell>{segment.count}</TableCell>
                                             <TableCell>
                                                 <Progress
-                                                    value={(segment.count / allItems.length) * 100}
+                                                    value={(segment.count / Math.max(1, allItems.length)) * 100}
                                                     className="w-24"
                                                 />
                                             </TableCell>

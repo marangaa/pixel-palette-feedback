@@ -7,14 +7,14 @@ import DetailedAnalysisLayout from '@/components/analysis/DetailedAnalysisLayout
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, ArrowLeft } from 'lucide-react';
-import type { DetailedAnalysis } from '@/types/detailed-analysis';
+import type { Analysis } from '@/types/analysis';
 
 export default function AnalysisPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const itemId = searchParams?.get('itemId');
 
-    const [analysis, setAnalysis] = useState<DetailedAnalysis | null>(null);
+    const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);

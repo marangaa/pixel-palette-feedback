@@ -4,42 +4,16 @@ import DashboardHeader from './DashboardHeader';
 import SummaryMetrics from './SummaryMetrics';
 import { FeedbackNavigation, CategoryView, categories } from './feedback';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { ApiResponse, FeedbackAnalysis, CategoryData } from '@/types/feedback';
+import type { ApiResponse, FeedbackAnalysis, CategoryKey, FeedbackItem } from '@/types/feedback';
 import { useRouter } from 'next/navigation';
 import FeedbackOverview from './FeedbackOverview';
 
-// Types
-export interface FeedbackItem {
-    id: string;
-    title: string;
-    description?: string;
-    count: number;
-    priority?: 'high' | 'medium' | 'low';
-    severity?: 'high' | 'medium' | 'low';
-    tags?: string[];
-    type: 'feature' | 'bug' | 'improvement';
-    status?: 'active' | 'investigating' | 'resolved';
-}
-
-export interface SentimentDataPoint {
-    period: string;
-    sentiment_score: number;
-    mention_count: number;
-}
-
-export interface UserSegment {
-    name: string;
-    count: number;
-    impact?: number;
-}
-
-type EmptyStateProps = object
-
-type LoadingStateProps = object
-
+type EmptyStateProps = object;
+type LoadingStateProps = object;
 interface ErrorStateProps {
     error: string;
 }
+
 const EmptyState: React.FC<EmptyStateProps> = () => (
     <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-sm">
         <Sparkles className="w-12 h-12 text-purple-300 mb-4" />
@@ -66,13 +40,37 @@ const ErrorState: React.FC<ErrorStateProps> = ({ error }) => (
     </Alert>
 );
 
+const defaultCategories: FeedbackAnalysis['categories'] = {
+    feature_requests: { items: [], stats: { total_items: 0 } },
+    bugs: { items: [], stats: { total_items: 0 } },
+    improvements: { items: [], stats: { total_items: 0 } },
+    performance: { items: [], stats: { total_items: 0 } },
+    praise: { items: [], stats: { total_items: 0 } },
+    issues: { items: [], stats: { total_items: 0 } },
+    general_feedback: { items: [], stats: { total_items: 0 } }
+};
+
+const defaultMeta = {
+    total_feedback_items: 0,
+    analysis_timestamp: new Date().toISOString(),
+    time_range: 30,
+    sentiment_trend: [],
+    user_segments: [],
+    sentiment_summary: {
+        positive: 0,
+        neutral: 0,
+        negative: 0,
+        average_score: 0
+    }
+};
+
 const AnalyticsDashboard: React.FC = () => {
     const router = useRouter();
     const [data, setData] = useState<FeedbackAnalysis | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState(30);
-    const [currentCategory, setCurrentCategory] = useState<keyof CategoryData>('feature_requests');
+    const [currentCategory, setCurrentCategory] = useState<CategoryKey>('feature_requests');
     const [view, setView] = useState<'overview' | 'category'>('overview');
 
     const fetchInsights = async (days: number): Promise<void> => {
@@ -82,10 +80,25 @@ const AnalyticsDashboard: React.FC = () => {
             const response = await fetch(`/api/analytics?days=${days}`);
             if (!response.ok) throw new Error('Failed to fetch insights');
             const result = await response.json() as ApiResponse;
-            if (!result.success) {
+
+            if (!result.success || !result.data) {
                 throw new Error(result.error || 'Unknown error occurred');
             }
-            setData(result.data);
+
+            // Process the data with defaults for missing categories
+            const processedData: FeedbackAnalysis = {
+                categories: {
+                    ...defaultCategories,
+                    ...result.data.categories
+                },
+                meta: {
+                    ...defaultMeta,
+                    ...result.data.meta,
+                    time_range: days
+                }
+            };
+
+            setData(processedData);
         } catch (error) {
             console.error('Error fetching insights:', error);
             setError(error instanceof Error ? error.message : 'Failed to load insights');
@@ -102,9 +115,9 @@ const AnalyticsDashboard: React.FC = () => {
         router.push(`/analysis/${item.id}`);
     };
 
-    const handleCategoryChange = (newCategory: keyof CategoryData | 'prev' | 'next'): void => {
+    const handleCategoryChange = (newCategory: CategoryKey | 'prev' | 'next'): void => {
         if (newCategory === 'prev' || newCategory === 'next') {
-            const categoryKeys = Object.keys(categories) as Array<keyof CategoryData>;
+            const categoryKeys = Object.keys(categories) as CategoryKey[];
             const currentIndex = categoryKeys.indexOf(currentCategory);
             let newIndex;
 
