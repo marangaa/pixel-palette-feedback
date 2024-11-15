@@ -1,410 +1,284 @@
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import crypto from 'crypto';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Define the schema for market analysis response
-const analysisSchema = {
+// Enhanced feedback schema with more structured data
+const feedbackSchema = {
     type: SchemaType.OBJECT,
     properties: {
-        marketAnalysis: {
+        categories: {
             type: SchemaType.OBJECT,
             properties: {
-                market_size: {
+                feature_requests: {
                     type: SchemaType.OBJECT,
                     properties: {
-                        total_addressable: { type: SchemaType.NUMBER },
-                        serviceable: { type: SchemaType.NUMBER },
-                        current_reach: { type: SchemaType.NUMBER }
-                    },
-                    required: ["total_addressable", "serviceable", "current_reach"]
-                },
-                competition: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        direct_competitors: {
+                        items: {
                             type: SchemaType.ARRAY,
                             items: {
                                 type: SchemaType.OBJECT,
                                 properties: {
-                                    name: { type: SchemaType.STRING },
-                                    market_share: { type: SchemaType.NUMBER },
-                                    key_features: {
+                                    id: { type: SchemaType.STRING },
+                                    title: { type: SchemaType.STRING },
+                                    description: { type: SchemaType.STRING },
+                                    count: { type: SchemaType.NUMBER },
+                                    sentiment_score: { type: SchemaType.NUMBER },
+                                    priority: { type: SchemaType.STRING },
+                                    impact: { type: SchemaType.STRING },
+                                    status: { type: SchemaType.STRING },
+                                    tags: {
                                         type: SchemaType.ARRAY,
                                         items: { type: SchemaType.STRING }
                                     },
-                                    strengths: {
+                                    user_segments: {
                                         type: SchemaType.ARRAY,
                                         items: { type: SchemaType.STRING }
                                     },
-                                    weaknesses: {
+                                    related_conversations: {
                                         type: SchemaType.ARRAY,
                                         items: { type: SchemaType.STRING }
+                                    },
+                                    first_mentioned: { type: SchemaType.STRING },
+                                    last_mentioned: { type: SchemaType.STRING }
+                                }
+                            }
+                        },
+                        stats: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                total_requests: { type: SchemaType.NUMBER },
+                                avg_sentiment: { type: SchemaType.NUMBER },
+                                top_tags: {
+                                    type: SchemaType.ARRAY,
+                                    items: { type: SchemaType.STRING }
+                                },
+                                priority_breakdown: {
+                                    type: SchemaType.OBJECT,
+                                    properties: {
+                                        high: { type: SchemaType.NUMBER },
+                                        medium: { type: SchemaType.NUMBER },
+                                        low: { type: SchemaType.NUMBER }
                                     }
                                 }
                             }
                         }
                     }
                 },
-                trends: {
+                bugs: {
                     type: SchemaType.OBJECT,
                     properties: {
-                        growing: {
+                        items: {
                             type: SchemaType.ARRAY,
-                            items: { type: SchemaType.STRING }
+                            items: {
+                                type: SchemaType.OBJECT,
+                                properties: {
+                                    id: { type: SchemaType.STRING },
+                                    title: { type: SchemaType.STRING },
+                                    description: { type: SchemaType.STRING },
+                                    count: { type: SchemaType.NUMBER },
+                                    severity: { type: SchemaType.STRING },
+                                    status: { type: SchemaType.STRING },
+                                    impact: { type: SchemaType.STRING },
+                                    affected_areas: {
+                                        type: SchemaType.ARRAY,
+                                        items: { type: SchemaType.STRING }
+                                    },
+                                    tags: {
+                                        type: SchemaType.ARRAY,
+                                        items: { type: SchemaType.STRING }
+                                    },
+                                    user_segments: {
+                                        type: SchemaType.ARRAY,
+                                        items: { type: SchemaType.STRING }
+                                    },
+                                    related_conversations: {
+                                        type: SchemaType.ARRAY,
+                                        items: { type: SchemaType.STRING }
+                                    },
+                                    first_reported: { type: SchemaType.STRING },
+                                    last_reported: { type: SchemaType.STRING }
+                                }
+                            }
                         },
-                        emerging: {
-                            type: SchemaType.ARRAY,
-                            items: { type: SchemaType.STRING }
-                        },
-                        declining: {
-                            type: SchemaType.ARRAY,
-                            items: { type: SchemaType.STRING }
+                        stats: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                total_bugs: { type: SchemaType.NUMBER },
+                                critical_count: { type: SchemaType.NUMBER },
+                                resolved_count: { type: SchemaType.NUMBER },
+                                top_affected_areas: {
+                                    type: SchemaType.ARRAY,
+                                    items: { type: SchemaType.STRING }
+                                }
+                            }
                         }
                     }
                 }
             }
         },
-        teamPerspectives: {
-            type: SchemaType.ARRAY,
-            items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    team: { type: SchemaType.STRING },
-                    sentiment: { type: SchemaType.NUMBER },
-                    concerns: {
-                        type: SchemaType.ARRAY,
-                        items: { type: SchemaType.STRING }
-                    },
-                    suggestions: {
-                        type: SchemaType.ARRAY,
-                        items: { type: SchemaType.STRING }
+        meta: {
+            type: SchemaType.OBJECT,
+            properties: {
+                total_feedback_items: { type: SchemaType.NUMBER },
+                analysis_timestamp: { type: SchemaType.STRING },
+                time_range: { type: SchemaType.NUMBER },
+                sentiment_summary: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        positive: { type: SchemaType.NUMBER },
+                        neutral: { type: SchemaType.NUMBER },
+                        negative: { type: SchemaType.NUMBER },
+                        average_score: { type: SchemaType.NUMBER }
                     }
-                }
-            }
-        },
-        implementation: {
-            type: SchemaType.OBJECT,
-            properties: {
-                technical_requirements: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
                 },
-                dependencies: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
-                },
-                risks: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
-                },
-                timeline_estimate: { type: SchemaType.STRING },
-                complexity_score: { type: SchemaType.NUMBER }
-            }
-        },
-        userImpact: {
-            type: SchemaType.OBJECT,
-            properties: {
-                benefits: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
-                },
-                potential_issues: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
-                },
-                user_segments_affected: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
-                },
-                expected_satisfaction_score: { type: SchemaType.NUMBER }
-            }
-        },
-        resourceAnalysis: {
-            type: SchemaType.OBJECT,
-            properties: {
-                required_team_size: { type: SchemaType.NUMBER },
-                estimated_cost: { type: SchemaType.NUMBER },
-                resource_breakdown: {
+                user_segments: {
                     type: SchemaType.ARRAY,
                     items: {
                         type: SchemaType.OBJECT,
                         properties: {
-                            resource_type: { type: SchemaType.STRING },
-                            allocation: { type: SchemaType.NUMBER },
-                            duration: { type: SchemaType.STRING }
+                            name: { type: SchemaType.STRING },
+                            count: { type: SchemaType.NUMBER }
                         }
                     }
-                }
-            }
-        },
-        recommendation: {
-            type: SchemaType.OBJECT,
-            properties: {
-                proceed: { type: SchemaType.BOOLEAN },
-                priority_score: { type: SchemaType.NUMBER },
-                rationale: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
                 },
-                next_steps: {
+                trending_tags: {
                     type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING }
+                    items: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            tag: { type: SchemaType.STRING },
+                            count: { type: SchemaType.NUMBER },
+                            trend: { type: SchemaType.NUMBER } // Percentage change
+                        }
+                    }
                 }
             }
         }
     }
 };
 
+const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-pro",
+    generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json",
+        responseSchema: feedbackSchema,
+    }
+});
+
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
-        const itemId = url.searchParams.get('itemId');
+        const days = parseInt(url.searchParams.get('days') || '30');
+        const filter = url.searchParams.get('filter') || 'all';
+        const sort = url.searchParams.get('sort') || 'count';
+        const page = parseInt(url.searchParams.get('page') || '1');
+        const limit = parseInt(url.searchParams.get('limit') || '50');
 
-        if (!itemId) {
-            return NextResponse.json({
-                success: false,
-                error: 'Item ID is required'
-            }, { status: 400 });
-        }
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
 
-        const analysis = await prisma.detailedAnalysis.findFirst({
-            where: { itemId },
-            include: {
-                marketAnalysis: true,
-                teamPerspectives: true,
-                implementation: true,
-                userImpact: true,
-                resourceAnalysis: true,
-                recommendation: true,
-                item: {
-                    include: {
-                        milestones: true,
-                        dependencies: true,
-                        feedback: true
-                    }
+        // Get conversations within time range
+        const conversations = await prisma.conversation.findMany({
+            where: {
+                timestamp: {
+                    gte: cutoffDate
                 }
             },
             orderBy: {
                 timestamp: 'desc'
-            }
-        });
-
-        return NextResponse.json({
-            success: true,
-            data: analysis
-        });
-
-    } catch (error) {
-        console.error('Error fetching analysis:', error);
-        return NextResponse.json({
-            success: false,
-            error: 'Failed to fetch analysis',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
-    }
-}
-
-export async function POST(req: Request) {
-    try {
-        const body = await req.json();
-        const { itemId } = body;
-
-        if (!itemId) {
-            return NextResponse.json({
-                success: false,
-                error: 'Item ID is required'
-            }, { status: 400 });
-        }
-
-        const item = await prisma.roadmapItem.findUnique({
-            where: { id: itemId },
+            },
             include: {
-                milestones: true,
-                feedback: true,
-                dependencies: {
-                    include: {
-                        target: true
-                    }
-                },
-                analysis: true
+                extractedData: true
             }
         });
 
-        if (!item) {
+        if (conversations.length === 0) {
             return NextResponse.json({
-                success: false,
-                error: 'Item not found'
-            }, { status: 404 });
+                success: true,
+                data: {
+                    categories: {
+                        feature_requests: { items: [], stats: { total_requests: 0 } },
+                        bugs: { items: [], stats: { total_bugs: 0 } }
+                    },
+                    meta: {
+                        total_feedback_items: 0,
+                        analysis_timestamp: new Date().toISOString(),
+                        time_range: days
+                    }
+                }
+            });
         }
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro",
-            generationConfig: {
-                temperature: 0.9,
-                topK: 1,
-                topP: 1,
-                maxOutputTokens: 2048,
-                responseMimeType: "application/json",
-                responseSchema: analysisSchema,
-            }
-        });
-
-        const prompt = `Analyze this product feature/item and provide a detailed analysis with realistic data. 
-        Consider the item's impact, market potential, technical feasibility, and resource requirements.
-        The response must follow the provided schema exactly.
+        // Analyze conversations using Gemini
+        const analysisPrompt = `Analyze these conversations and categorize the feedback into structured categories.
+        Focus on:
+        1. Identifying distinct feature requests and bugs
+        2. Grouping similar mentions together
+        3. Analyzing sentiment and impact
+        4. Identifying user segments and patterns
+        5. Extracting relevant tags and metadata
         
-        Item Data: ${JSON.stringify(item, null, 2)}`;
+        Return the analysis following the exact schema structure.
+        
+        Conversations: ${JSON.stringify(conversations)}`;
 
         const result = await model.generateContent([
-            {
-                text: prompt
-            }
+            { text: analysisPrompt }
         ]);
 
-        const analysisContent = JSON.parse(result.response.text());
+        const analysisResult = JSON.parse(result.response.text());
 
-        // Create detailed analysis in a transaction
-        const analysis = await prisma.$transaction(async (tx) => {
-            // Create main analysis record
-            const detailedAnalysis = await tx.detailedAnalysis.create({
-                data: {
-                    itemId,
-                    marketAnalysis: {
-                        create: analysisContent.marketAnalysis
-                    },
-                    teamPerspectives: {
-                        create: analysisContent.teamPerspectives
-                    },
-                    implementation: {
-                        create: analysisContent.implementation
-                    },
-                    userImpact: {
-                        create: analysisContent.userImpact
-                    },
-                    resourceAnalysis: {
-                        create: analysisContent.resourceAnalysis
-                    },
-                    recommendation: {
-                        create: analysisContent.recommendation
-                    }
-                }
-            });
-
-            return tx.detailedAnalysis.findUnique({
-                where: { id: detailedAnalysis.id },
-                include: {
-                    marketAnalysis: true,
-                    teamPerspectives: true,
-                    implementation: true,
-                    userImpact: true,
-                    resourceAnalysis: true,
-                    recommendation: true
-                }
-            });
-        });
-
-        return NextResponse.json({
-            success: true,
-            data: analysis
-        });
-
-    } catch (error) {
-        console.error('Error creating analysis:', error);
-        return NextResponse.json({
-            success: false,
-            error: 'Failed to create analysis',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
-    }
-}
-
-export async function PUT(req: Request) {
-    try {
-        const body = await req.json();
-        const { analysisId, updates } = body;
-
-        if (!analysisId) {
-            return NextResponse.json({
-                success: false,
-                error: 'Analysis ID is required'
-            }, { status: 400 });
-        }
-
-        const analysis = await prisma.$transaction(async (tx) => {
-            // Update each section that has changes
-            if (updates.marketAnalysis) {
-                await tx.marketAnalysis.update({
-                    where: { analysisId },
-                    data: updates.marketAnalysis
-                });
-            }
-
-            if (updates.teamPerspectives) {
-                // Delete existing and create new
-                await tx.teamPerspective.deleteMany({
-                    where: { analysisId }
-                });
-                await tx.teamPerspective.createMany({
-                    data: updates.teamPerspectives.map((p: any) => ({
-                        ...p,
-                        analysisId
+        // Add unique IDs to items if they don't exist
+        const processedResult = {
+            ...analysisResult,
+            categories: {
+                feature_requests: {
+                    ...analysisResult.categories.feature_requests,
+                    items: analysisResult.categories.feature_requests.items.map(item => ({
+                        ...item,
+                        id: item.id || crypto.randomUUID()
                     }))
-                });
-            }
-
-            if (updates.implementation) {
-                await tx.implementationDetails.update({
-                    where: { analysisId },
-                    data: updates.implementation
-                });
-            }
-
-            if (updates.userImpact) {
-                await tx.userImpactAnalysis.update({
-                    where: { analysisId },
-                    data: updates.userImpact
-                });
-            }
-
-            if (updates.resourceAnalysis) {
-                await tx.resourceAnalysis.update({
-                    where: { analysisId },
-                    data: updates.resourceAnalysis
-                });
-            }
-
-            if (updates.recommendation) {
-                await tx.recommendation.update({
-                    where: { analysisId },
-                    data: updates.recommendation
-                });
-            }
-
-            return tx.detailedAnalysis.findUnique({
-                where: { id: analysisId },
-                include: {
-                    marketAnalysis: true,
-                    teamPerspectives: true,
-                    implementation: true,
-                    userImpact: true,
-                    resourceAnalysis: true,
-                    recommendation: true
+                },
+                bugs: {
+                    ...analysisResult.categories.bugs,
+                    items: analysisResult.categories.bugs.items.map(item => ({
+                        ...item,
+                        id: item.id || crypto.randomUUID()
+                    }))
                 }
-            });
-        });
+            }
+        };
+
+        // Save analysis results
+        await prisma.$transaction([
+            prisma.feedbackAnalysis.updateMany({
+                where: { isLatest: true },
+                data: { isLatest: false }
+            }),
+            prisma.feedbackAnalysis.create({
+                data: {
+                    timeRange: days,
+                    categories: processedResult.categories,
+                    meta: processedResult.meta,
+                    isLatest: true,
+                    timestamp: new Date()
+                }
+            })
+        ]);
 
         return NextResponse.json({
             success: true,
-            data: analysis
+            data: processedResult
         });
 
     } catch (error) {
-        console.error('Error updating analysis:', error);
+        console.error('Error in feedback analysis:', error);
         return NextResponse.json({
             success: false,
-            error: 'Failed to update analysis',
+            error: 'Failed to analyze feedback',
             details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
