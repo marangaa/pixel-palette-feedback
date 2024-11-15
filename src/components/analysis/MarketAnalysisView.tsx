@@ -6,162 +6,210 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    PieChart,
+    Pie
 } from 'recharts';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MarketAnalysis } from '@/types/detailed-analysis';
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarketAnalysis } from '@/types/detailed-analysis';
 
 interface MarketAnalysisViewProps {
     analysis: MarketAnalysis;
     onUpdate?: (updates: Partial<MarketAnalysis>) => void;
 }
 
-interface MarketStatCardProps {
-    title: string;
-    value: number;
-    total: number;
-    description: string;
-    onUpdate?: (value: number) => void;
-}
-
-const MarketStatCard: React.FC<MarketStatCardProps> = ({
-                                                           title,
-                                                           value,
-                                                           total,
-                                                           description,
-                                                           onUpdate
-                                                       }) => {
-    const percentage = ((value / total) * 100).toFixed(1);
+const MarketOverview: React.FC<{ marketSize: MarketAnalysis['market_size'] }> = ({ marketSize }) => {
+    const data = [
+        {
+            name: 'Total Market',
+            value: marketSize.total_addressable,
+            color: '#8884d8'
+        },
+        {
+            name: 'Serviceable',
+            value: marketSize.serviceable,
+            color: '#82ca9d'
+        },
+        {
+            name: 'Current',
+            value: marketSize.current_reach,
+            color: '#ffc658'
+        }
+    ];
 
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    className="h-4 w-4 text-muted-foreground"
-                >
-                    <path d="M12 2v20M2 12h20" />
-                </svg>
+        <Card className="col-span-2">
+            <CardHeader>
+                <CardTitle>Market Size Overview</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{value.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                    {percentage}% - {description}
-                </p>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={data}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                label
+                            >
+                                {data.map((entry, index) => (
+                                    <Cell key={index} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                    {data.map((item, index) => (
+                        <div key={index} className="text-center">
+                            <h4 className="text-sm font-medium text-gray-500">{item.name}</h4>
+                            <p className="text-2xl font-bold" style={{ color: item.color }}>
+                                {item.value.toLocaleString()}
+                            </p>
+                        </div>
+                    ))}
+                </div>
             </CardContent>
         </Card>
     );
 };
 
-interface CompetitorTableProps {
-    competitors: MarketAnalysis['competition']['direct_competitors'];
-    onUpdate?: (updates: typeof competitors) => void;
-}
-
-const CompetitorTable: React.FC<CompetitorTableProps> = ({ competitors, onUpdate }) => (
-    <Table>
-        <TableCaption>Direct Competitors Analysis</TableCaption>
-        <TableHeader>
-            <TableRow>
-                <TableHead>Competitor</TableHead>
-                <TableHead>Market Share</TableHead>
-                <TableHead>Key Features</TableHead>
-                <TableHead>Strengths</TableHead>
-                <TableHead>Weaknesses</TableHead>
-            </TableRow>
-        </TableHeader>
-        <TableBody>
-            {competitors.map((competitor, index) => (
-                <TableRow key={index}>
-                    <TableCell className="font-medium">{competitor.name}</TableCell>
-                    <TableCell>{competitor.market_share}%</TableCell>
-                    <TableCell>
-                        <ul className="list-disc list-inside">
-                            {competitor.key_features.map((feature, i) => (
-                                <li key={i} className="text-sm">{feature}</li>
-                            ))}
-                        </ul>
-                    </TableCell>
-                    <TableCell>
-                        <ul className="list-disc list-inside">
-                            {competitor.strengths.map((strength, i) => (
-                                <li key={i} className="text-sm">{strength}</li>
-                            ))}
-                        </ul>
-                    </TableCell>
-                    <TableCell>
-                        <ul className="list-disc list-inside">
-                            {competitor.weaknesses.map((weakness, i) => (
-                                <li key={i} className="text-sm">{weakness}</li>
-                            ))}
-                        </ul>
-                    </TableCell>
-                </TableRow>
-            ))}
-        </TableBody>
-    </Table>
+const CompetitorAnalysis: React.FC<{
+    competitors: MarketAnalysis['competition']['direct_competitors']
+}> = ({ competitors }) => (
+    <Card className="col-span-3">
+        <CardHeader>
+            <CardTitle>Competitor Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-6">
+                <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={competitors}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="market_share" fill="#8884d8" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Competitor</TableHead>
+                            <TableHead>Market Share</TableHead>
+                            <TableHead>Key Features</TableHead>
+                            <TableHead>Strengths</TableHead>
+                            <TableHead>Weaknesses</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {competitors.map((competitor, index) => (
+                            <TableRow key={index}>
+                                <TableCell className="font-medium">
+                                    {competitor.name}
+                                </TableCell>
+                                <TableCell>
+                                    {competitor.market_share}%
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                        {competitor.key_features.map((feature, i) => (
+                                            <Badge key={i} variant="outline">
+                                                {feature}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        {competitor.strengths.map((strength, i) => (
+                                            <li key={i} className="text-sm">{strength}</li>
+                                        ))}
+                                    </ul>
+                                </TableCell>
+                                <TableCell>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        {competitor.weaknesses.map((weakness, i) => (
+                                            <li key={i} className="text-sm">{weakness}</li>
+                                        ))}
+                                    </ul>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </CardContent>
+    </Card>
 );
 
-interface TrendSectionProps {
-    trends: MarketAnalysis['trends'];
-    onUpdate?: (updates: Partial<MarketAnalysis['trends']>) => void;
-}
-
-const TrendSection: React.FC<TrendSectionProps> = ({ trends, onUpdate }) => (
-    <div className="grid grid-cols-3 gap-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>Growing Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                    {trends.growing.map((trend, index) => (
-                        <li key={index} className="text-sm text-green-600">{trend}</li>
-                    ))}
-                </ul>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Emerging Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                    {trends.emerging.map((trend, index) => (
-                        <li key={index} className="text-sm text-blue-600">{trend}</li>
-                    ))}
-                </ul>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Declining Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                    {trends.declining.map((trend, index) => (
-                        <li key={index} className="text-sm text-red-600">{trend}</li>
-                    ))}
-                </ul>
-            </CardContent>
-        </Card>
-    </div>
+const TrendAnalysis: React.FC<{ trends: MarketAnalysis['trends'] }> = ({ trends }) => (
+    <Card className="col-span-3">
+        <CardHeader>
+            <CardTitle>Market Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <Tabs defaultValue="growing" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="growing">Growing</TabsTrigger>
+                    <TabsTrigger value="emerging">Emerging</TabsTrigger>
+                    <TabsTrigger value="declining">Declining</TabsTrigger>
+                </TabsList>
+                <TabsContent value="growing">
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        {trends.growing.map((trend, index) => (
+                            <Card key={index}>
+                                <CardContent className="pt-6">
+                                    <Badge className="bg-green-100 text-green-800 mb-2">Growing</Badge>
+                                    <p className="font-medium">{trend}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+                <TabsContent value="emerging">
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        {trends.emerging.map((trend, index) => (
+                            <Card key={index}>
+                                <CardContent className="pt-6">
+                                    <Badge className="bg-blue-100 text-blue-800 mb-2">Emerging</Badge>
+                                    <p className="font-medium">{trend}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+                <TabsContent value="declining">
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        {trends.declining.map((trend, index) => (
+                            <Card key={index}>
+                                <CardContent className="pt-6">
+                                    <Badge className="bg-red-100 text-red-800 mb-2">Declining</Badge>
+                                    <p className="font-medium">{trend}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+            </Tabs>
+        </CardContent>
+    </Card>
 );
 
 export const MarketAnalysisView: React.FC<MarketAnalysisViewProps> = ({
@@ -176,83 +224,11 @@ export const MarketAnalysisView: React.FC<MarketAnalysisViewProps> = ({
         );
     }
 
-    const marketSize = analysis.market_size;
-    const totalMarket = marketSize.total_addressable;
-
     return (
-        <div className="space-y-8">
-            <div className="grid grid-cols-3 gap-4">
-                <MarketStatCard
-                    title="Total Addressable Market"
-                    value={marketSize.total_addressable}
-                    total={totalMarket}
-                    description="Total potential market size"
-                    onUpdate={value => onUpdate?.({
-                        market_size: { ...marketSize, total_addressable: value }
-                    })}
-                />
-                <MarketStatCard
-                    title="Serviceable Market"
-                    value={marketSize.serviceable}
-                    total={totalMarket}
-                    description="Market we can serve"
-                    onUpdate={value => onUpdate?.({
-                        market_size: { ...marketSize, serviceable: value }
-                    })}
-                />
-                <MarketStatCard
-                    title="Current Reach"
-                    value={marketSize.current_reach}
-                    total={totalMarket}
-                    description="Our current market share"
-                    onUpdate={value => onUpdate?.({
-                        market_size: { ...marketSize, current_reach: value }
-                    })}
-                />
-            </div>
-
-            {analysis.competition.direct_competitors.length > 0 && (
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <h3 className="text-lg font-semibold mb-4">Market Share Distribution</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={analysis.competition.direct_competitors}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="market_share" fill="#8884d8" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-
-            {analysis.competition.direct_competitors.length > 0 && (
-                <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">Competitive Analysis</h3>
-                    <CompetitorTable
-                        competitors={analysis.competition.direct_competitors}
-                        onUpdate={competitors => onUpdate?.({
-                            competition: {
-                                ...analysis.competition,
-                                direct_competitors: competitors
-                            }
-                        })}
-                    />
-                </div>
-            )}
-
-            <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Market Trends</h3>
-                <TrendSection
-                    trends={analysis.trends}
-                    onUpdate={trends => onUpdate?.({ trends })}
-                />
-            </div>
+        <div className="grid grid-cols-3 gap-6">
+            <MarketOverview marketSize={analysis.market_size} />
+            <CompetitorAnalysis competitors={analysis.competition.direct_competitors} />
+            <TrendAnalysis trends={analysis.trends} />
         </div>
     );
 };
